@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/roi-calc/static/js/main.56d11ba5.js",
+    "main.js": "/roi-calc/static/js/main.734f05ea.js",
     "index.html": "/roi-calc/index.html",
-    "main.56d11ba5.js.map": "/roi-calc/static/js/main.56d11ba5.js.map"
+    "main.734f05ea.js.map": "/roi-calc/static/js/main.734f05ea.js.map"
   },
   "entrypoints": [
-    "static/js/main.56d11ba5.js"
+    "static/js/main.734f05ea.js"
   ]
 }
