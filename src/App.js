@@ -8,7 +8,7 @@ const B = {
   redBg:"#FDF2F2", amber:"#D4A017", amberBg:"#FFFBEB",
 };
 
-const PLAYS = [
+const USE_CASES = [
   {
     id:"code-review", label:"Code Review", number:"01",
     tagline:"Recover senior engineering time. Ship faster. Catch more bugs.",
@@ -417,9 +417,9 @@ function ThresholdMeter({threshold,value,onChange}){
 
 // ─── CATEGORY PANEL (one per enabled category) ───
 
-function CategoryPanel({play,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly}){
-  const pct=play.savingsRange[scenarioIdx];
-  const results=play.compute(vals,pct,cat.id);
+function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly}){
+  const pct=useCase.savingsRange[scenarioIdx];
+  const results=useCase.compute(vals,pct,cat.id);
   return(
     <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
       {/* Category header */}
@@ -439,7 +439,7 @@ function CategoryPanel({play,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemo
           ))}
           {/* Scenario mini-selector */}
           <div style={{marginTop:8,padding:"10px 12px",background:B.offWhite,borderRadius:4}}>
-            <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>{play.savingsLabel} — Scenario</div>
+            <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>{useCase.savingsLabel} — Scenario</div>
             <div style={{display:"flex",gap:4}}>
               {SL.map((label,i)=>(
                 <button key={label} onClick={()=>setScenarioIdx(i)} style={{
@@ -450,7 +450,7 @@ function CategoryPanel({play,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemo
                   fontWeight:700,fontSize:8,cursor:"pointer",textAlign:"center",
                 }}>
                   <div style={{textTransform:"uppercase",letterSpacing:"0.04em"}}>{label}</div>
-                  <div style={{fontSize:12,color:scenarioIdx===i?B.green:B.darkGray}}>{Math.round(play.savingsRange[i]*100)}%</div>
+                  <div style={{fontSize:12,color:scenarioIdx===i?B.green:B.darkGray}}>{Math.round(useCase.savingsRange[i]*100)}%</div>
                 </button>
               ))}
             </div>
@@ -460,7 +460,7 @@ function CategoryPanel({play,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemo
         <div>
           <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Results — {cat.label}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {play.metrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]}/>)}
+            {useCase.metrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]}/>)}
           </div>
           <div style={{marginTop:10,padding:"8px 10px",background:results.totalBenefit>(vals.augmentCost||180000)?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>(vals.augmentCost||180000)?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase"}}>Net Benefit</span>
@@ -472,16 +472,16 @@ function CategoryPanel({play,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemo
   );
 }
 
-// ─── PLAY TAB (multi-category) ───
+// ─── USE CASE TAB (multi-category) ───
 
-function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange}){
+function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange}){
   // Compute results for each enabled category
   const catResults=enabledCats.map(catId=>{
-    const cat=play.evalCategories.find(c=>c.id===catId);
+    const cat=useCase.evalCategories.find(c=>c.id===catId);
     const vals=catValues[catId]||{};
     const si=catScenarios[catId]??1;
-    const pct=play.savingsRange[si];
-    const results=play.compute(vals,pct,catId);
+    const pct=useCase.savingsRange[si];
+    const results=useCase.compute(vals,pct,catId);
     return {cat,catId,vals,scenarioIdx:si,pct,results};
   });
   // Combined totals across all enabled categories
@@ -492,26 +492,26 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
   const combinedFTE=combinedHours/2080;
   const roiMultiple=combinedCost>0?(combinedBenefit/combinedCost).toFixed(1):"0";
   // Threshold results
-  const thresholdResults=play.successThresholds
-    ?play.successThresholds.map(t=>({...t,value:thresholds[t.key]??0,met:(thresholds[t.key]??0)>=t.target}))
+  const thresholdResults=useCase.successThresholds
+    ?useCase.successThresholds.map(t=>({...t,value:thresholds[t.key]??0,met:(thresholds[t.key]??0)>=t.target}))
     :[];
   const metCount=thresholdResults.filter(t=>t.met).length;
   // Available categories not yet enabled
-  const availableCats=play.evalCategories.filter(c=>!enabledCats.includes(c.id));
+  const availableCats=useCase.evalCategories.filter(c=>!enabledCats.includes(c.id));
 
   return(
     <div>
-      {/* Play header */}
+      {/* Use Case header */}
       <div style={{background:B.black,padding:"20px 32px 18px",borderBottom:`4px solid ${B.green}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:14}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>AUTOMATION PLAY {play.number} · {enabledCats.length} CATEGOR{enabledCats.length===1?"Y":"IES"} ACTIVE</div>
-            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4,lineHeight:1.2}}>{play.label}</h2>
-            <p style={{fontSize:11,color:B.greenLight,fontWeight:500,marginBottom:5}}>{play.tagline}</p>
-            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>{play.description}</p>
+            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>AUTOMATION USE CASE {useCase.number} · {enabledCats.length} CATEGOR{enabledCats.length===1?"Y":"IES"} ACTIVE</div>
+            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4,lineHeight:1.2}}>{useCase.label}</h2>
+            <p style={{fontSize:11,color:B.greenLight,fontWeight:500,marginBottom:5}}>{useCase.tagline}</p>
+            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>{useCase.description}</p>
           </div>
           <div style={{display:"flex",gap:8,flexShrink:0}}>
-            {play.successThresholds&&(
+            {useCase.successThresholds&&(
               <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:4,padding:"10px 14px",textAlign:"center"}}>
                 <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Pilot Success</div>
                 <div style={{fontSize:20,fontWeight:700,color:metCount===thresholdResults.length?B.greenBright:B.amber,lineHeight:1}}>{metCount}/{thresholdResults.length}</div>
@@ -533,7 +533,7 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
       <div style={{padding:"12px 32px",background:B.offWhite,borderBottom:"1px solid #E8E8E8",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
         <span style={{fontSize:9,color:B.green,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginRight:4}}>Active Categories:</span>
         {enabledCats.map(catId=>{
-          const cat=play.evalCategories.find(c=>c.id===catId);
+          const cat=useCase.evalCategories.find(c=>c.id===catId);
           return cat?(
             <span key={catId} style={{display:"inline-flex",alignItems:"center",gap:4,background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:3,padding:"4px 10px",fontSize:9,fontWeight:600,color:B.greenDark}}>
               {cat.label}
@@ -559,7 +559,7 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
         {catResults.map(({cat,catId,vals,scenarioIdx})=>(
           <CategoryPanel
             key={catId}
-            play={play}
+            useCase={useCase}
             cat={cat}
             vals={vals}
             onChange={(key,val)=>onValueChange(catId,key,val)}
@@ -569,10 +569,10 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
             isOnly={enabledCats.length===1}
           />
         ))}
-        {/* Combined Play Summary (when multiple categories) */}
+        {/* Combined Use Case Summary (when multiple categories) */}
         {enabledCats.length>1&&(
           <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
-            <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Combined Play Summary ({enabledCats.length} categories)</div>
+            <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Combined Use Case Summary ({enabledCats.length} categories)</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
               {[
                 {label:"Combined Annual Benefit",value:"$"+Math.round(combinedBenefit).toLocaleString(),hl:true},
@@ -608,7 +608,7 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px",marginBottom:14}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Validated Pilot Outcomes</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-            {play.benchmarks.map((b,i)=>(
+            {useCase.benchmarks.map((b,i)=>(
               <div key={i} style={{background:"rgba(255,255,255,0.04)",borderLeft:`2px solid ${B.green}`,borderRadius:2,padding:"7px 9px"}}>
                 <div style={{fontSize:13,fontWeight:700,color:B.greenBright,marginBottom:1}}>{b.stat}</div>
                 <div style={{fontSize:9,color:B.gray,lineHeight:1.4}}>{b.label}</div>
@@ -621,11 +621,11 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px",marginBottom:14}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Executive Summary</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9}}>
-            Across <span style={{color:B.greenBright,fontWeight:700}}>{enabledCats.length} evaluation categor{enabledCats.length===1?"y":"ies"}</span> ({catResults.map(r=>r.cat.label).join(", ")}), this play delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(combinedBenefit).toLocaleString()}</span> in combined annual benefit, recovering <span style={{color:B.white,fontWeight:700}}>{combinedFTE.toFixed(1)} FTEs</span> of engineering capacity — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(combinedROI)}% ROI</span> against a <span style={{color:B.white,fontWeight:700}}>${(combinedCost).toLocaleString()}</span> investment.
+            Across <span style={{color:B.greenBright,fontWeight:700}}>{enabledCats.length} evaluation categor{enabledCats.length===1?"y":"ies"}</span> ({catResults.map(r=>r.cat.label).join(", ")}), this use case delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(combinedBenefit).toLocaleString()}</span> in combined annual benefit, recovering <span style={{color:B.white,fontWeight:700}}>{combinedFTE.toFixed(1)} FTEs</span> of engineering capacity — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(combinedROI)}% ROI</span> against a <span style={{color:B.white,fontWeight:700}}>${(combinedCost).toLocaleString()}</span> investment.
           </p>
         </div>
         {/* Success Thresholds */}
-        {play.successThresholds&&(
+        {useCase.successThresholds&&(
           <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
               <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Pilot Success Thresholds</div>
@@ -635,7 +635,7 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {thresholdResults.map(t=>(
                 <ThresholdMeter key={t.key} threshold={t} value={thresholds[t.key]??0}
-                  onChange={(key,val)=>onThresholdChange(play.id,key,val)}/>
+                  onChange={(key,val)=>onThresholdChange(useCase.id,key,val)}/>
               ))}
             </div>
             <div style={{marginTop:10,padding:"8px 12px",background:metCount===thresholdResults.length?B.greenBg:B.amberBg,border:`1px solid ${metCount===thresholdResults.length?B.green:B.amber}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -649,16 +649,16 @@ function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenar
   );
 }
 
-function DisabledTab({play,onEnable}){
+function DisabledTab({useCase,onEnable}){
   return(
     <div style={{padding:"60px 32px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,minHeight:300}}>
       <div style={{width:48,height:48,borderRadius:8,background:B.offWhite,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:B.gray}}>◌</div>
       <div style={{textAlign:"center"}}>
-        <div style={{fontSize:14,fontWeight:700,color:B.darkGray,marginBottom:4}}>{play.label} is excluded</div>
-        <div style={{fontSize:11,color:B.gray}}>This play is not included in the Summary or PDF export.</div>
+        <div style={{fontSize:14,fontWeight:700,color:B.darkGray,marginBottom:4}}>{useCase.label} is excluded</div>
+        <div style={{fontSize:11,color:B.gray}}>This use case is not included in the Summary or PDF export.</div>
       </div>
       <button onClick={onEnable} style={{background:B.green,border:"none",borderRadius:4,padding:"9px 20px",cursor:"pointer",color:B.white,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>
-        + Include This Play
+        + Include This Use Case
       </button>
     </div>
   );
@@ -669,25 +669,25 @@ function DisabledTab({play,onEnable}){
 function SummaryTab({allCatResults,customerName}){
   if(allCatResults.length===0) return(
     <div style={{padding:"60px 32px",textAlign:"center"}}>
-      <div style={{fontSize:14,color:B.gray,marginBottom:8}}>No plays are currently included.</div>
-      <div style={{fontSize:11,color:B.gray}}>Enable at least one play tab to see the summary.</div>
+      <div style={{fontSize:14,color:B.gray,marginBottom:8}}>No use cases are currently included.</div>
+      <div style={{fontSize:11,color:B.gray}}>Enable at least one use case tab to see the summary.</div>
     </div>
   );
-  // Use max augmentCost per play (shared cost, not summed per category)
-  const playMap={};
+  // Use max augmentCost per use case (shared cost, not summed per category)
+  const useCaseMap={};
   allCatResults.forEach(r=>{
-    if(!playMap[r.play.id]) playMap[r.play.id]={play:r.play,cats:[],maxCost:0};
-    playMap[r.play.id].cats.push(r);
-    playMap[r.play.id].maxCost=Math.max(playMap[r.play.id].maxCost,r.augmentCost);
+    if(!useCaseMap[r.useCase.id]) useCaseMap[r.useCase.id]={useCase:r.useCase,cats:[],maxCost:0};
+    useCaseMap[r.useCase.id].cats.push(r);
+    useCaseMap[r.useCase.id].maxCost=Math.max(useCaseMap[r.useCase.id].maxCost,r.augmentCost);
   });
   const grandTotal=allCatResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const grandCost=Object.values(playMap).reduce((s,p)=>s+p.maxCost,0);
+  const grandCost=Object.values(useCaseMap).reduce((s,p)=>s+p.maxCost,0);
   const grandNet=grandTotal-grandCost;
   const grandROI=grandCost>0?((grandTotal-grandCost)/grandCost)*100:0;
   const grandPayback=grandCost>0?grandCost/(grandTotal/12):0;
   const grandFTE=allCatResults.reduce((s,r)=>s+(r.results.fteEquivalent||0),0);
   const grandHours=allCatResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
-  const playCount=Object.keys(playMap).length;
+  const useCaseCount=Object.keys(useCaseMap).length;
 
   return(
     <div>
@@ -696,7 +696,7 @@ function SummaryTab({allCatResults,customerName}){
           <div style={{flex:1}}>
             <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>COMBINED ROI SUMMARY</div>
             <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4}}>{customerName?customerName+" × Augment Code":"Full Platform ROI Summary"}</h2>
-            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>Consolidated view across {playCount} play{playCount>1?"s":""}, {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}.</p>
+            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>Consolidated view across {useCaseCount} use case{useCaseCount>1?"s":""}, {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}.</p>
           </div>
           <div style={{display:"flex",gap:8}}>
             {[{label:"Total Benefit",value:"$"+Math.round(grandTotal).toLocaleString()},{label:"Combined ROI",value:Math.round(grandROI)+"%"},{label:"Payback",value:grandPayback.toFixed(1)+" mo"}].map(s=>(
@@ -715,18 +715,18 @@ function SummaryTab({allCatResults,customerName}){
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead>
               <tr style={{borderBottom:`2px solid ${B.green}`}}>
-                {["Play","Category","Scenario","Total Benefit","ROI","FTEs","Payback"].map(h=>(
+                {["Use Case","Category","Scenario","Total Benefit","ROI","FTEs","Payback"].map(h=>(
                   <th key={h} style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:700,padding:"0 6px 6px 0",textAlign:"left"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {allCatResults.map((r,i)=>(
-                <tr key={r.play.id+"-"+r.catId} style={{borderBottom:"1px solid #F0F0F0",background:i%2===0?B.white:B.cardBg}}>
+                <tr key={r.useCase.id+"-"+r.catId} style={{borderBottom:"1px solid #F0F0F0",background:i%2===0?B.white:B.cardBg}}>
                   <td style={{padding:"8px 6px 8px 0",fontWeight:700,fontSize:10,color:B.black}}>
                     <div style={{display:"flex",alignItems:"center",gap:4}}>
-                      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:2,background:B.green,fontSize:7,fontWeight:700,color:B.white,flexShrink:0}}>{r.play.number}</span>
-                      {r.play.label}
+                      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:2,background:B.green,fontSize:7,fontWeight:700,color:B.white,flexShrink:0}}>{r.useCase.number}</span>
+                      {r.useCase.label}
                     </div>
                   </td>
                   <td style={{padding:"8px 6px 8px 0",fontSize:9,color:B.gray}}>{r.categoryLabel}</td>
@@ -740,7 +740,7 @@ function SummaryTab({allCatResults,customerName}){
             </tbody>
             <tfoot>
               <tr style={{borderTop:`2px solid ${B.green}`,background:B.greenBg}}>
-                <td colSpan={3} style={{padding:"8px 6px 8px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>TOTAL ({playCount} plays, {allCatResults.length} categories)</td>
+                <td colSpan={3} style={{padding:"8px 6px 8px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>TOTAL ({useCaseCount} use cases, {allCatResults.length} categories)</td>
                 <td style={{padding:"8px 6px 8px 0",fontSize:12,fontWeight:700,color:B.greenDark}}>${Math.round(grandTotal).toLocaleString()}</td>
                 <td style={{padding:"8px 6px 8px 0"}}><span style={{fontSize:12,fontWeight:700,color:B.white,background:B.green,padding:"2px 7px",borderRadius:3}}>{Math.round(grandROI)}%</span></td>
                 <td style={{padding:"8px 6px 8px 0",fontSize:10,fontWeight:700,color:B.greenDark}}>{grandFTE.toFixed(1)}</td>
@@ -756,9 +756,9 @@ function SummaryTab({allCatResults,customerName}){
             {allCatResults.map(r=>{
               const share=grandTotal>0?(r.results.totalBenefit/grandTotal)*100:0;
               return(
-                <div key={r.play.id+"-"+r.catId} style={{marginBottom:10}}>
+                <div key={r.useCase.id+"-"+r.catId} style={{marginBottom:10}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                    <span style={{fontSize:9,color:B.darkGray,fontWeight:600}}>{r.play.label} — {r.categoryLabel}</span>
+                    <span style={{fontSize:9,color:B.darkGray,fontWeight:600}}>{r.useCase.label} — {r.categoryLabel}</span>
                     <span style={{fontSize:9,fontWeight:700,color:B.black}}>${Math.round(r.results.totalBenefit).toLocaleString()} ({share.toFixed(0)}%)</span>
                   </div>
                   <div style={{height:4,background:B.offWhite,borderRadius:3,overflow:"hidden"}}>
@@ -791,7 +791,7 @@ function SummaryTab({allCatResults,customerName}){
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {playCount} active Augment Code play{playCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
+            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
           </p>
         </div>
       </div>
@@ -807,7 +807,7 @@ export default function App(){
   const [editingName,setEditingName]=useState(false);
   const [enabled,setEnabled]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
 
-  // Multi-category: which categories are active per play
+  // Multi-category: which categories are active per use case
   const [enabledCats,setEnabledCats]=useState({
     "code-review":["throughput"],
     "unit-test":["velocity"],
@@ -815,17 +815,17 @@ export default function App(){
     "interactive":["productivity"],
   });
 
-  // Per-category scenario indices: {playId: {catId: scenarioIdx}}
+  // Per-category scenario indices: {useCaseId: {catId: scenarioIdx}}
   const [catScenarios,setCatScenarios]=useState(()=>{
     const s={};
-    PLAYS.forEach(p=>{s[p.id]={};p.evalCategories.forEach(c=>{s[p.id][c.id]=1;});});
+    USE_CASES.forEach(p=>{s[p.id]={};p.evalCategories.forEach(c=>{s[p.id][c.id]=1;});});
     return s;
   });
 
-  // Per-category input values: {playId: {catId: {key: val}}}
+  // Per-category input values: {useCaseId: {catId: {key: val}}}
   const [catValues,setCatValues]=useState(()=>{
     const init={};
-    PLAYS.forEach(p=>{
+    USE_CASES.forEach(p=>{
       init[p.id]={};
       p.evalCategories.forEach(cat=>{
         init[p.id][cat.id]={};
@@ -837,65 +837,65 @@ export default function App(){
 
   const [thresholds,setThresholds]=useState(()=>{
     const t={};
-    PLAYS.forEach(p=>{if(p.successThresholds){t[p.id]={};p.successThresholds.forEach(s=>{t[p.id][s.key]=0;});}});
+    USE_CASES.forEach(p=>{if(p.successThresholds){t[p.id]={};p.successThresholds.forEach(s=>{t[p.id][s.key]=0;});}});
     return t;
   });
 
-  const handleValueChange=useCallback((playId,catId,key,val)=>{
+  const handleValueChange=useCallback((useCaseId,catId,key,val)=>{
     setCatValues(prev=>({
       ...prev,
-      [playId]:{...prev[playId],[catId]:{...prev[playId]?.[catId],[key]:val}}
+      [useCaseId]:{...prev[useCaseId],[catId]:{...prev[useCaseId]?.[catId],[key]:val}}
     }));
   },[]);
 
-  const handleScenarioChange=useCallback((playId,catId,idx)=>{
+  const handleScenarioChange=useCallback((useCaseId,catId,idx)=>{
     setCatScenarios(prev=>({
       ...prev,
-      [playId]:{...prev[playId],[catId]:idx}
+      [useCaseId]:{...prev[useCaseId],[catId]:idx}
     }));
   },[]);
 
-  const handleToggleCat=useCallback((playId,catId)=>{
+  const handleToggleCat=useCallback((useCaseId,catId)=>{
     setEnabledCats(prev=>{
-      const current=prev[playId]||[];
+      const current=prev[useCaseId]||[];
       if(current.includes(catId)){
         // Remove (but keep at least one)
         if(current.length<=1) return prev;
-        return {...prev,[playId]:current.filter(c=>c!==catId)};
+        return {...prev,[useCaseId]:current.filter(c=>c!==catId)};
       } else {
         // Add
-        return {...prev,[playId]:[...current,catId]};
+        return {...prev,[useCaseId]:[...current,catId]};
       }
     });
   },[]);
 
-  const handleThresholdChange=useCallback((playId,key,val)=>{
-    setThresholds(prev=>({...prev,[playId]:{...prev[playId],[key]:val}}));
+  const handleThresholdChange=useCallback((useCaseId,key,val)=>{
+    setThresholds(prev=>({...prev,[useCaseId]:{...prev[useCaseId],[key]:val}}));
   },[]);
 
-  // Build allCatResults: one entry per enabled category per enabled play
+  // Build allCatResults: one entry per enabled category per enabled use case
   const allCatResults=[];
-  PLAYS.filter(p=>enabled[p.id]).forEach(play=>{
-    const cats=enabledCats[play.id]||[];
+  USE_CASES.filter(p=>enabled[p.id]).forEach(useCase=>{
+    const cats=enabledCats[useCase.id]||[];
     cats.forEach(catId=>{
-      const cat=play.evalCategories.find(c=>c.id===catId);
+      const cat=useCase.evalCategories.find(c=>c.id===catId);
       if(!cat) return;
-      const vals=catValues[play.id]?.[catId]||{};
-      const si=catScenarios[play.id]?.[catId]??1;
-      const pct=play.savingsRange[si];
-      const results=play.compute(vals,pct,catId);
+      const vals=catValues[useCase.id]?.[catId]||{};
+      const si=catScenarios[useCase.id]?.[catId]??1;
+      const pct=useCase.savingsRange[si];
+      const results=useCase.compute(vals,pct,catId);
       allCatResults.push({
-        play,catId,cat,
+        useCase,catId,cat,
         categoryLabel:cat.label,
         scenarioIdx:si,
         results,
         augmentCost:vals.augmentCost||180000,
-        thresholds:thresholds[play.id]||{},
+        thresholds:thresholds[useCase.id]||{},
       });
     });
   });
 
-  const activePlay=PLAYS.find(p=>p.id===activeTab);
+  const activeUseCase=USE_CASES.find(p=>p.id===activeTab);
 
   const tabLabel=(p)=>{
     const isEn=enabled[p.id];
@@ -951,13 +951,13 @@ export default function App(){
           )}
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:9,color:B.gray,letterSpacing:"0.08em",textTransform:"uppercase"}}>{allCatResults.length} categories across {Object.keys(enabled).filter(k=>enabled[k]).length} plays</span>
+          <span style={{fontSize:9,color:B.gray,letterSpacing:"0.08em",textTransform:"uppercase"}}>{allCatResults.length} categories across {Object.keys(enabled).filter(k=>enabled[k]).length} use cases</span>
         </div>
       </div>
       {/* TABS */}
       <div style={{background:B.offWhite,borderBottom:"1px solid #E0E0E0",padding:"0 32px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{display:"flex"}}>
-          {PLAYS.map(p=>tabLabel(p))}
+          {USE_CASES.map(p=>tabLabel(p))}
           <button onClick={()=>setActiveTab("summary")} style={{
             background:"transparent",border:"none",
             borderBottom:activeTab==="summary"?`3px solid ${B.green}`:"3px solid transparent",
@@ -971,17 +971,17 @@ export default function App(){
             Summary
           </button>
         </div>
-        {activePlay&&(
+        {activeUseCase&&(
           <button onClick={()=>{
-            const next=!enabled[activePlay.id];
-            setEnabled(prev=>({...prev,[activePlay.id]:next}));
+            const next=!enabled[activeUseCase.id];
+            setEnabled(prev=>({...prev,[activeUseCase.id]:next}));
           }} style={{
-            background:"transparent",border:`1px solid ${enabled[activePlay.id]?B.red:B.green}`,
+            background:"transparent",border:`1px solid ${enabled[activeUseCase.id]?B.red:B.green}`,
             borderRadius:4,padding:"4px 10px",cursor:"pointer",
-            color:enabled[activePlay.id]?B.red:B.green,
+            color:enabled[activeUseCase.id]?B.red:B.green,
             fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",
           }}>
-            {enabled[activePlay.id]?"✕ Exclude":"+ Include"}
+            {enabled[activeUseCase.id]?"✕ Exclude":"+ Include"}
           </button>
         )}
       </div>
@@ -989,21 +989,21 @@ export default function App(){
       {/* CONTENT */}
       {activeTab==="summary"?(
         <SummaryTab allCatResults={allCatResults} customerName={customerName}/>
-      ):activePlay?(
-        enabled[activePlay.id]?(
-          <PlayTab
-            play={activePlay}
-            enabledCats={enabledCats[activePlay.id]||[]}
-            catValues={catValues[activePlay.id]||{}}
-            catScenarios={catScenarios[activePlay.id]||{}}
-            onValueChange={(catId,key,val)=>handleValueChange(activePlay.id,catId,key,val)}
-            onScenarioChange={(catId,idx)=>handleScenarioChange(activePlay.id,catId,idx)}
-            onToggleCat={catId=>handleToggleCat(activePlay.id,catId)}
-            thresholds={thresholds[activePlay.id]||{}}
+      ):activeUseCase?(
+        enabled[activeUseCase.id]?(
+          <UseCaseTab
+            useCase={activeUseCase}
+            enabledCats={enabledCats[activeUseCase.id]||[]}
+            catValues={catValues[activeUseCase.id]||{}}
+            catScenarios={catScenarios[activeUseCase.id]||{}}
+            onValueChange={(catId,key,val)=>handleValueChange(activeUseCase.id,catId,key,val)}
+            onScenarioChange={(catId,idx)=>handleScenarioChange(activeUseCase.id,catId,idx)}
+            onToggleCat={catId=>handleToggleCat(activeUseCase.id,catId)}
+            thresholds={thresholds[activeUseCase.id]||{}}
             onThresholdChange={handleThresholdChange}
           />
         ):(
-          <DisabledTab play={activePlay} onEnable={()=>setEnabled(prev=>({...prev,[activePlay.id]:true}))}/>
+          <DisabledTab useCase={activeUseCase} onEnable={()=>setEnabled(prev=>({...prev,[activeUseCase.id]:true}))}/>
         )
       ):null}
 
