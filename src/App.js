@@ -16,7 +16,7 @@ const PLAYS = [
   {
     id:"code-review", label:"Code Review", number:"01",
     tagline:"Recover senior engineering time. Ship faster. Catch more bugs.",
-    description:"Augment's Context Engine acts as a codebase-aware reviewer on every PR \u2014 cutting repetitive review work by 30\u201350%, flagging real bugs, and accelerating merge cycles across your entire org.",
+    description:"Augment's Context Engine acts as a codebase-aware reviewer on every PR — cutting repetitive review work by 30–50%, flagging real bugs, and accelerating merge cycles across your entire org.",
     savingsRange:[0.30,0.40,0.50], savingsLabel:"Review time recovered",
     evalCategories:[
       {
@@ -83,22 +83,22 @@ const PLAYS = [
       {key:"roi",label:"Return on investment",format:"percent",highlight:true},
     ],
     benchmarks:[
-      {stat:"55\u201370%",label:"Comment address rate (industry-leading)"},
-      {stat:"30\u201350%",label:"Reduction in senior review time"},
-      {stat:"40%\u2193",label:"Faster time-to-first-review"},
+      {stat:"55–70%",label:"Comment address rate (industry-leading)"},
+      {stat:"30–50%",label:"Reduction in senior review time"},
+      {stat:"40%↓",label:"Faster time-to-first-review"},
       {stat:"~90%",label:"Bug detection rate"},
     ],
     successThresholds:[
-      {key:"ttfr",label:"% Faster Time-to-First-Review",target:40,unit:"%",desc:"Target: \u226540% reduction in TTF-review"},
-      {key:"commentRate",label:"Augment Comment Address Rate",target:55,unit:"%",desc:"Target: \u226555% of comments actioned by devs"},
-      {key:"prCoverage",label:"% Eligible PRs Receiving Augment Review",target:70,unit:"%",desc:"Target: \u226570% adoption across pilot PRs"},
-      {key:"seniorTimeFreed",label:"Senior Time Freed (hrs/week self-reported)",target:3,unit:"hrs",desc:"Target: \u22653 hrs/week per senior reviewer",isAbsolute:true,max:20},
+      {key:"ttfr",label:"% Faster Time-to-First-Review",target:40,unit:"%",desc:"Target: ≥40% reduction in TTF-review"},
+      {key:"commentRate",label:"Augment Comment Address Rate",target:55,unit:"%",desc:"Target: ≥55% of comments actioned by devs"},
+      {key:"prCoverage",label:"% Eligible PRs Receiving Augment Review",target:70,unit:"%",desc:"Target: ≥70% adoption across pilot PRs"},
+      {key:"seniorTimeFreed",label:"Senior Time Freed (hrs/week self-reported)",target:3,unit:"hrs",desc:"Target: ≥3 hrs/week per senior reviewer",isAbsolute:true,max:20},
     ],
   },
   {
     id:"unit-test", label:"Unit Test Automation", number:"02",
     tagline:"Give engineers back their week. Ship with confidence.",
-    description:"Engineers spend ~10% of their week writing and maintaining unit tests. Augment generates codebase-aware tests, boosts coverage, and auto-fixes CI failures \u2014 removing grunt work without sacrificing quality.",
+    description:"Engineers spend ~10% of their week writing and maintaining unit tests. Augment generates codebase-aware tests, boosts coverage, and auto-fixes CI failures — removing grunt work without sacrificing quality.",
     savingsRange:[0.30,0.50,0.70], savingsLabel:"Test time automated",
     evalCategories:[
       {
@@ -167,20 +167,20 @@ const PLAYS = [
     ],
     benchmarks:[
       {stat:"~10%",label:"Of dev week spent on unit tests"},
-      {stat:"30\u201350%",label:"Reduction in test-related CI failures"},
-      {stat:"\u226580%",label:"Generated test correctness target"},
-      {stat:"3\u20135\u00d7",label:"ROI with time + defect avoidance"},
+      {stat:"30–50%",label:"Reduction in test-related CI failures"},
+      {stat:"≥80%",label:"Generated test correctness target"},
+      {stat:"3–5×",label:"ROI with time + defect avoidance"},
     ],
     successThresholds:[
-      {key:"timeReduction",label:"% Reduction in Test-Writing Time (pilot modules)",target:50,unit:"%",desc:"Target: \u226550% reduction on pilot-scope modules"},
-      {key:"coverageGain",label:"Coverage Gain on Pilot Targets (pts)",target:20,unit:"pts",desc:"Target: \u2265+20 pts coverage on pilot services",isAbsolute:true,max:40},
-      {key:"testCorrectness",label:"% Generated Tests Considered Correct / Usable",target:80,unit:"%",desc:"Target: \u226580% correctness as judged by devs or CI"},
+      {key:"timeReduction",label:"% Reduction in Test-Writing Time (pilot modules)",target:50,unit:"%",desc:"Target: ≥50% reduction on pilot-scope modules"},
+      {key:"coverageGain",label:"Coverage Gain on Pilot Targets (pts)",target:20,unit:"pts",desc:"Target: ≥+20 pts coverage on pilot services",isAbsolute:true,max:40},
+      {key:"testCorrectness",label:"% Generated Tests Considered Correct / Usable",target:80,unit:"%",desc:"Target: ≥80% correctness as judged by devs or CI"},
     ],
   },
   {
     id:"build-failure", label:"Build Failure Analyzer", number:"03",
     tagline:"From red to green in minutes, not hours.",
-    description:"Augment correlates code changes, tests, logs, and ownership into a coherent triage story \u2014 diagnosing failures, routing to the right engineer, and proposing fixes before the team opens Slack.",
+    description:"Augment correlates code changes, tests, logs, and ownership into a coherent triage story — diagnosing failures, routing to the right engineer, and proposing fixes before the team opens Slack.",
     savingsRange:[0.50,0.70,0.80], savingsLabel:"MTTR reduction",
     evalCategories:[
       {
@@ -251,21 +251,21 @@ const PLAYS = [
       {key:"roi",label:"Return on investment",format:"percent",highlight:true},
     ],
     benchmarks:[
-      {stat:"60\u201380%",label:"MTTR reduction \u2014 hours to minutes"},
+      {stat:"60–80%",label:"MTTR reduction — hours to minutes"},
       {stat:"65%",label:"Reduction in CI firefighting"},
-      {stat:"~10\u00d7",label:"ROI on platform automation"},
+      {stat:"~10×",label:"ROI on platform automation"},
       {stat:"2.5%",label:"Dev time lost to flaky tests (recoverable)"},
     ],
     successThresholds:[
-      {key:"triageReduction",label:"% Reduction in Average Triage Time",target:60,unit:"%",desc:"Target: \u226560% reduction in time to identify cause"},
-      {key:"mttrReduction",label:"% Faster MTTR (Red-to-Green)",target:70,unit:"%",desc:"Target: \u226570% faster mean time to remediation"},
-      {key:"autoClassified",label:"% of Failures Auto-Classified / Routed",target:65,unit:"%",desc:"Target: \u226565% of failures classified without manual triage"},
+      {key:"triageReduction",label:"% Reduction in Average Triage Time",target:60,unit:"%",desc:"Target: ≥60% reduction in time to identify cause"},
+      {key:"mttrReduction",label:"% Faster MTTR (Red-to-Green)",target:70,unit:"%",desc:"Target: ≥70% faster mean time to remediation"},
+      {key:"autoClassified",label:"% of Failures Auto-Classified / Routed",target:65,unit:"%",desc:"Target: ≥65% of failures classified without manual triage"},
     ],
   },
   {
     id:"interactive", label:"Interactive (IDE + CLI)", number:"04",
     tagline:"Every developer. Every day. Measurable productivity at scale.",
-    description:"Augment's IDE and interactive CLI give every engineer a context-aware coding partner \u2014 saving hours on boilerplate, onboarding, and code navigation while consolidating your existing tool sprawl into one unified platform.",
+    description:"Augment's IDE and interactive CLI give every engineer a context-aware coding partner — saving hours on boilerplate, onboarding, and code navigation while consolidating your existing tool sprawl into one unified platform.",
     savingsRange:[0.60,0.80,1.00], savingsLabel:"Productivity uplift captured",
     evalCategories:[
       {
@@ -324,9 +324,9 @@ const PLAYS = [
       {key:"roi",label:"Return on investment",format:"percent",highlight:true},
     ],
     benchmarks:[
-      {stat:"1\u20135+ hrs",label:"Saved per dev per week in pilots"},
+      {stat:"1–5+ hrs",label:"Saved per dev per week in pilots"},
       {stat:"60K+",label:"Annual hours saved at 100-dev scale"},
-      {stat:"~10\u00d7",label:"Platform-level ROI in internal decks"},
+      {stat:"~10×",label:"Platform-level ROI in internal decks"},
       {stat:"$3M+",label:"Productivity value at scale"},
     ],
     successThresholds:null,
@@ -336,7 +336,7 @@ const PLAYS = [
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 const fmt=(val,format)=>{
-  if(val===undefined||val===null||isNaN(val)) return "\u2014";
+  if(val===undefined||val===null||isNaN(val)) return "—";
   if(format==="dollar") return "$"+Math.round(val).toLocaleString();
   if(format==="percent") return Math.round(val)+"%";
   if(format==="hours") return Math.round(val).toLocaleString()+" hrs";
@@ -414,7 +414,7 @@ function ThresholdMeter({threshold,value,onChange}){
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,marginLeft:12}}>
           <span style={{fontSize:9,color:B.gray}}>Target: <strong style={{color:B.darkGray}}>{threshold.target}{threshold.unit}</strong></span>
           <span style={{fontSize:16,fontWeight:700,color}}>{value}{threshold.unit}</span>
-          <span style={{fontSize:14}}>{met?"\u2713":"\u25CB"}</span>
+          <span style={{fontSize:14}}>{met?"✓":"○"}</span>
         </div>
       </div>
       <div style={{position:"relative",height:6,background:"rgba(0,0,0,0.08)",borderRadius:3}}>
@@ -425,7 +425,7 @@ function ThresholdMeter({threshold,value,onChange}){
           style={{position:"absolute",top:-8,left:0,width:"100%",height:20,WebkitAppearance:"none",appearance:"none",background:"transparent",outline:"none",cursor:"pointer",margin:0}}/>
       </div>
       <div style={{display:"flex",justifyContent:"flex-end",marginTop:4}}>
-        <span style={{fontSize:8,color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>{met?"\u2713 Threshold Met":"Below Target"}</span>
+        <span style={{fontSize:8,color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>{met?"✓ Threshold Met":"Below Target"}</span>
       </div>
     </div>
   );
@@ -448,7 +448,7 @@ function EvalCategorySelector({play,selectedCat,onSelect}){
           <div style={{fontSize:11,fontWeight:700,color:B.black}}>{current.label}</div>
           <div style={{fontSize:10,color:B.gray,marginTop:2}}>{current.desc}</div>
         </div>
-        <span style={{fontSize:10,color:B.green,marginLeft:8,flexShrink:0}}>{open?"\u25B2":"\u25BC"}</span>
+        <span style={{fontSize:10,color:B.green,marginLeft:8,flexShrink:0}}>{open?"▲":"▼"}</span>
       </button>
       {open&&(
         <div style={{position:"absolute",top:"100%",left:0,right:0,background:B.white,border:`1px solid ${B.green}`,borderTop:"none",borderRadius:"0 0 4px 4px",zIndex:100,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
@@ -485,7 +485,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
       <div style={{background:B.black,padding:"22px 32px 20px",borderBottom:`4px solid ${B.green}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:16}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:5}}>AUTOMATION PLAY {play.number} \u00b7 {currentCat.label}</div>
+            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:5}}>AUTOMATION PLAY {play.number} · {currentCat.label}</div>
             <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:5,lineHeight:1.2}}>{play.label}</h2>
             <p style={{fontSize:12,color:B.greenLight,fontWeight:500,marginBottom:6}}>{play.tagline}</p>
             <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:580}}>{play.description}</p>
@@ -500,7 +500,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
             )}
             <div style={{background:B.green,borderRadius:4,padding:"12px 20px",textAlign:"center"}}>
               <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>ROI Multiple</div>
-              <div style={{fontSize:32,fontWeight:700,color:B.white,lineHeight:1}}>{roiMultiple}\u00d7</div>
+              <div style={{fontSize:32,fontWeight:700,color:B.white,lineHeight:1}}>{roiMultiple}×</div>
               <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",marginTop:2,textTransform:"uppercase",letterSpacing:"0.08em"}}>{SL[scenarioIdx]}</div>
             </div>
           </div>
@@ -521,7 +521,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
           </div>
           {/* Scenario */}
           <div style={{background:B.white,border:"1px solid #E8E8E8",borderRadius:4,padding:"14px 16px"}}>
-            <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>{play.savingsLabel} \u2014 Scenario</div>
+            <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>{play.savingsLabel} — Scenario</div>
             <div style={{display:"flex",gap:8}}>
               {SL.map((label,i)=>(
                 <button key={label} onClick={()=>setScenarioIdx(i)} style={{
@@ -582,7 +582,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
           <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
             <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Executive Summary</div>
             <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9}}>
-              Using the <span style={{color:B.greenBright,fontWeight:700}}>{currentCat.label}</span> lens at the <span style={{color:B.greenBright,fontWeight:700}}>{SL[scenarioIdx].toLowerCase()}</span> scenario ({Math.round(pct*100)}% {play.savingsLabel.toLowerCase()}), Augment delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(results.totalBenefit).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${(vals.augmentCost||180000).toLocaleString()}</span> investment \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(results.roi)}% ROI</span> with payback in <span style={{color:B.greenBright,fontWeight:700}}>{results.payback.toFixed(1)} months</span>. Recovering <span style={{color:B.white,fontWeight:700}}>{results.fteEquivalent.toFixed(1)} FTEs</span> of engineering capacity per year.
+              Using the <span style={{color:B.greenBright,fontWeight:700}}>{currentCat.label}</span> lens at the <span style={{color:B.greenBright,fontWeight:700}}>{SL[scenarioIdx].toLowerCase()}</span> scenario ({Math.round(pct*100)}% {play.savingsLabel.toLowerCase()}), Augment delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(results.totalBenefit).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${(vals.augmentCost||180000).toLocaleString()}</span> investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(results.roi)}% ROI</span> with payback in <span style={{color:B.greenBright,fontWeight:700}}>{results.payback.toFixed(1)} months</span>. Recovering <span style={{color:B.white,fontWeight:700}}>{results.fteEquivalent.toFixed(1)} FTEs</span> of engineering capacity per year.
             </p>
           </div>
         </div>
@@ -595,7 +595,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
               <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700}}>Pilot Success Thresholds</div>
               <div style={{fontSize:9,color:B.gray}}>Drag each slider to your actual achieved result</div>
             </div>
-            <p style={{fontSize:10,color:B.gray,marginBottom:14,lineHeight:1.6}}>Track actual pilot outcomes against success targets. The marker on each bar shows the minimum threshold \u2014 slide to your achieved result to see pass/fail status.</p>
+            <p style={{fontSize:10,color:B.gray,marginBottom:14,lineHeight:1.6}}>Track actual pilot outcomes against success targets. The marker on each bar shows the minimum threshold — slide to your achieved result to see pass/fail status.</p>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               {thresholdResults.map(t=>(
                 <ThresholdMeter key={t.key} threshold={t} value={thresholds[t.key]??0}
@@ -604,7 +604,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
             </div>
             <div style={{marginTop:12,padding:"10px 14px",background:metCount===thresholdResults.length?B.greenBg:B.amberBg,border:`1px solid ${metCount===thresholdResults.length?B.green:B.amber}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:10,color:B.darkGray}}>Pilot success score</span>
-              <span style={{fontSize:14,fontWeight:700,color:metCount===thresholdResults.length?B.greenDark:B.amber}}>{metCount} of {thresholdResults.length} thresholds met {metCount===thresholdResults.length?"\u2713":"\u2014 in progress"}</span>
+              <span style={{fontSize:14,fontWeight:700,color:metCount===thresholdResults.length?B.greenDark:B.amber}}>{metCount} of {thresholdResults.length} thresholds met {metCount===thresholdResults.length?"✓":"— in progress"}</span>
             </div>
           </div>
         </div>
@@ -618,7 +618,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
 function DisabledTab({play,onEnable}){
   return(
     <div style={{padding:"60px 32px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,minHeight:300}}>
-      <div style={{width:48,height:48,borderRadius:8,background:B.offWhite,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:B.gray}}>\u25CC</div>
+      <div style={{width:48,height:48,borderRadius:8,background:B.offWhite,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:B.gray}}>◌</div>
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:14,fontWeight:700,color:B.darkGray,marginBottom:4}}>{play.label} is excluded</div>
         <div style={{fontSize:11,color:B.gray}}>This play is not included in the Summary or PDF export.</div>
@@ -652,7 +652,7 @@ function SummaryTab({allResults,customerName}){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:16}}>
           <div style={{flex:1}}>
             <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:5}}>COMBINED ROI SUMMARY</div>
-            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:5}}>{customerName?customerName+" \u00d7 Augment Code":"Full Platform ROI Summary"}</h2>
+            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:5}}>{customerName?customerName+" × Augment Code":"Full Platform ROI Summary"}</h2>
             <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>Consolidated view across {allResults.length} active automation play{allResults.length>1?"s":""}. Each play contributes independently.</p>
           </div>
           <div style={{display:"flex",gap:10}}>
@@ -751,7 +751,7 @@ function SummaryTab({allResults,customerName}){
         <div style={{background:B.black,borderRadius:4,padding:"16px 18px"}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {allResults.length} active Augment Code automation play{allResults.length>1?"s":""} ({allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> platform investment \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering the equivalent of <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
+            Across {allResults.length} active Augment Code automation play{allResults.length>1?"s":""} ({allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> platform investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering the equivalent of <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
           </p>
         </div>
       </div>
@@ -779,7 +779,7 @@ function exportToPDF(allResults,customerName){
       const color=met?"#158158":val>=(t.target*0.75)?"#D4A017":"#D94F4F";
       return `<div style="background:${met?"#EBF5F0":"#FFFBEB"};border-left:3px solid ${color};border-radius:3px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:9px;font-weight:700;color:#0D0D0D">${t.label}</div><div style="font-size:8px;color:#888;margin-top:1px">${t.desc}</div></div>
-        <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-size:11px;font-weight:700;color:${color}">${val}${t.unit}</div><div style="font-size:8px;color:${color}">${met?"\u2713 Met":"Target: "+t.target+t.unit}</div></div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-size:11px;font-weight:700;color:${color}">${val}${t.unit}</div><div style="font-size:8px;color:${color}">${met?"✓ Met":"Target: "+t.target+t.unit}</div></div>
       </div>`;
     }).join("");
     return `<div style="margin-top:14px"><div style="font-size:8px;color:#158158;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:8px">Pilot Success Thresholds</div>${items}</div>`;
@@ -787,8 +787,8 @@ function exportToPDF(allResults,customerName){
 
   const playPage=(r)=>`
   <div class="page">
-    <div class="ph"><div><div class="ey">AUTOMATION PLAY ${r.play.number} \u00b7 ${r.categoryLabel}</div><div class="pt">${r.play.label}</div><div style="font-size:10px;color:#1AAA6E;font-weight:500;margin-top:3px">${r.play.tagline}</div></div>
-    <div style="background:#158158;border-radius:4px;padding:10px 18px;text-align:center;flex-shrink:0"><div style="font-size:8px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">ROI Multiple</div><div style="font-size:26px;font-weight:700;color:#fff;line-height:1">${(r.results.totalBenefit/r.augmentCost).toFixed(1)}\u00d7</div><div style="font-size:8px;color:rgba(255,255,255,0.6);margin-top:2px">${SL[r.scenarioIdx]}</div></div></div>
+    <div class="ph"><div><div class="ey">AUTOMATION PLAY ${r.play.number} · ${r.categoryLabel}</div><div class="pt">${r.play.label}</div><div style="font-size:10px;color:#1AAA6E;font-weight:500;margin-top:3px">${r.play.tagline}</div></div>
+    <div style="background:#158158;border-radius:4px;padding:10px 18px;text-align:center;flex-shrink:0"><div style="font-size:8px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">ROI Multiple</div><div style="font-size:26px;font-weight:700;color:#fff;line-height:1">${(r.results.totalBenefit/r.augmentCost).toFixed(1)}×</div><div style="font-size:8px;color:rgba(255,255,255,0.6);margin-top:2px">${SL[r.scenarioIdx]}</div></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
       <div>
         <div class="sl">Impact Summary</div>
@@ -810,14 +810,14 @@ function exportToPDF(allResults,customerName){
         </div>
         <div style="background:#0D0D0D;border-radius:3px;padding:12px 14px">
           <div style="font-size:8px;color:#22C97A;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:7px">Executive Summary</div>
-          <p style="font-size:9px;color:#CCCCCC;line-height:1.9">Using the <strong style="color:#fff">${r.categoryLabel}</strong> lens at the <strong style="color:#22C97A">${SL[r.scenarioIdx].toLowerCase()}</strong> scenario, Augment delivers <strong style="color:#fff">$${Math.round(r.results.totalBenefit).toLocaleString()}</strong> in annual benefit against a <strong style="color:#fff">$${Math.round(r.augmentCost).toLocaleString()}</strong> investment \u2014 a <strong style="color:#22C97A">${Math.round(r.results.roi)}% ROI</strong> with payback in <strong style="color:#22C97A">${r.results.payback.toFixed(1)} months</strong>. Equivalent to recovering <strong style="color:#fff">${(r.results.fteEquivalent||0).toFixed(1)} FTEs</strong> of engineering capacity per year.</p>
+          <p style="font-size:9px;color:#CCCCCC;line-height:1.9">Using the <strong style="color:#fff">${r.categoryLabel}</strong> lens at the <strong style="color:#22C97A">${SL[r.scenarioIdx].toLowerCase()}</strong> scenario, Augment delivers <strong style="color:#fff">$${Math.round(r.results.totalBenefit).toLocaleString()}</strong> in annual benefit against a <strong style="color:#fff">$${Math.round(r.augmentCost).toLocaleString()}</strong> investment — a <strong style="color:#22C97A">${Math.round(r.results.roi)}% ROI</strong> with payback in <strong style="color:#22C97A">${r.results.payback.toFixed(1)} months</strong>. Equivalent to recovering <strong style="color:#fff">${(r.results.fteEquivalent||0).toFixed(1)} FTEs</strong> of engineering capacity per year.</p>
         </div>
       </div>
     </div>
-    <div class="pf">PRIVILEGED &amp; CONFIDENTIAL \u00b7 augment code \u00b7 ${today}</div>
+    <div class="pf">PRIVILEGED &amp; CONFIDENTIAL · augment code · ${today}</div>
   </div>`;
 
-  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Augment Code ROI \u2014 ${customerName||"Customer"}</title>
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Augment Code ROI — ${customerName||"Customer"}</title>
   <style>
   @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Roboto Mono',monospace;background:#fff;color:#0D0D0D;font-size:11px}
@@ -834,7 +834,7 @@ function exportToPDF(allResults,customerName){
   .pbtn{position:fixed;bottom:20px;right:20px;background:#158158;color:#fff;border:none;border-radius:4px;padding:11px 18px;font-family:'Roboto Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;z-index:9999}
   @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page,.tp{page-break-after:always}.pbtn{display:none}}
   </style></head><body>
-  <button class="pbtn" onclick="window.print()">\u2B07 Save as PDF</button>
+  <button class="pbtn" onclick="window.print()">⬇ Save as PDF</button>
   <div class="tp">
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:40px"><div style="width:36px;height:36px;background:#158158;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff">A</div><span style="font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase">augment code</span></div>
@@ -849,7 +849,7 @@ function exportToPDF(allResults,customerName){
     <div style="font-size:9px;color:#444"><div>PRIVILEGED &amp; CONFIDENTIAL</div><div style="margin-top:4px">${today}</div></div>
   </div>
   <div class="page">
-    <div class="ph"><div><div class="ey">COMBINED ROI SUMMARY</div><div class="pt">${customerName?customerName+" \u00d7 Augment Code":"Full Platform Summary"}</div></div>
+    <div class="ph"><div><div class="ey">COMBINED ROI SUMMARY</div><div class="pt">${customerName?customerName+" × Augment Code":"Full Platform Summary"}</div></div>
     <div style="display:flex;gap:8px">${[{l:"Total Benefit",v:"$"+Math.round(grandTotal).toLocaleString()},{l:"Combined ROI",v:Math.round(grandROI)+"%"},{l:"Payback",v:grandPayback.toFixed(1)+" mo"}].map(s=>`<div style="background:#158158;border-radius:3px;padding:10px 14px;text-align:center"><div style="font-size:8px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px">${s.l}</div><div style="font-size:16px;font-weight:700;color:#fff">${s.v}</div></div>`).join("")}</div></div>
     <div class="sl">Per-Play Breakdown</div>
     <table><thead><tr>${["Play","Category","Scenario","Total Benefit","Cost","Net Benefit","ROI","FTEs","Payback"].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
@@ -859,9 +859,9 @@ function exportToPDF(allResults,customerName){
     </tbody></table>
     <div style="background:#0D0D0D;border-radius:4px;padding:14px 16px;margin-top:4px">
       <div style="font-size:8px;color:#22C97A;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:7px">Combined Executive Narrative</div>
-      <p style="font-size:9px;color:#CCCCCC;line-height:1.9">Across ${allResults.length} active Augment Code automation plays (${allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <strong style="color:#fff">$${Math.round(grandTotal).toLocaleString()}</strong> in annual benefit against a <strong style="color:#fff">$${Math.round(grandCost).toLocaleString()}</strong> investment \u2014 a <strong style="color:#22C97A">${Math.round(grandROI)}% combined ROI</strong> with a payback period of <strong style="color:#22C97A">${grandPayback.toFixed(1)} months</strong>, recovering the equivalent of <strong style="color:#fff">${grandFTE.toFixed(1)} FTEs</strong> of engineering capacity annually.</p>
+      <p style="font-size:9px;color:#CCCCCC;line-height:1.9">Across ${allResults.length} active Augment Code automation plays (${allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <strong style="color:#fff">$${Math.round(grandTotal).toLocaleString()}</strong> in annual benefit against a <strong style="color:#fff">$${Math.round(grandCost).toLocaleString()}</strong> investment — a <strong style="color:#22C97A">${Math.round(grandROI)}% combined ROI</strong> with a payback period of <strong style="color:#22C97A">${grandPayback.toFixed(1)} months</strong>, recovering the equivalent of <strong style="color:#fff">${grandFTE.toFixed(1)} FTEs</strong> of engineering capacity annually.</p>
     </div>
-    <div class="pf">PRIVILEGED &amp; CONFIDENTIAL \u00b7 augment code \u00b7 ${today}</div>
+    <div class="pf">PRIVILEGED &amp; CONFIDENTIAL · augment code · ${today}</div>
   </div>
   ${allResults.map(playPage).join("")}
   </body></html>`;
@@ -946,11 +946,11 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{width:26,height:26,borderRadius:4,background:B.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:B.white}}>A</div>
           <span style={{fontSize:11,fontWeight:700,color:B.white,letterSpacing:"0.12em",textTransform:"uppercase"}}>augment code</span>
-          <span style={{color:B.darkGray,margin:"0 6px"}}>\u00b7</span>
+          <span style={{color:B.darkGray,margin:"0 6px"}}>·</span>
           {editingName?(
             <input type="text" value={customerName} onChange={e=>setCustomerName(e.target.value)}
               onBlur={()=>setEditingName(false)} onKeyDown={e=>e.key==="Enter"&&setEditingName(false)}
-              autoFocus placeholder="Enter customer name\u2026"
+              autoFocus placeholder="Enter customer name…"
               style={{background:"transparent",border:"none",borderBottom:`1px solid ${B.green}`,color:B.white,fontSize:11,outline:"none",width:200}}/>
           ):(
             <span onClick={()=>setEditingName(true)} style={{fontSize:11,color:customerName?B.greenLight:B.gray,cursor:"pointer",borderBottom:`1px dashed ${B.darkGray}`}}>
@@ -962,7 +962,7 @@ export default function App(){
           <span style={{fontSize:9,color:B.gray,letterSpacing:"0.1em",textTransform:"uppercase"}}>{allResults.length} of {PLAYS.length} plays active</span>
           <button onClick={()=>exportToPDF(allResults,customerName)}
             style={{background:B.green,border:"none",borderRadius:4,padding:"7px 14px",cursor:"pointer",color:B.white,fontSize:10,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
-            \u2B07 Export PDF
+            ⬇ Export PDF
           </button>
         </div>
       </div>
@@ -979,7 +979,7 @@ export default function App(){
             fontSize:10,letterSpacing:"0.06em",textTransform:"uppercase",
             transition:"all 0.15s",display:"flex",alignItems:"center",gap:6,
           }}>
-            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:2,background:activeTab==="summary"?B.green:"transparent",border:`1px solid ${activeTab==="summary"?B.green:B.gray}`,fontSize:8,fontWeight:700,color:activeTab==="summary"?B.white:B.gray}}>\u03A3</span>
+            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:2,background:activeTab==="summary"?B.green:"transparent",border:`1px solid ${activeTab==="summary"?B.green:B.gray}`,fontSize:8,fontWeight:700,color:activeTab==="summary"?B.white:B.gray}}>Σ</span>
             Summary
           </button>
         </div>
@@ -996,7 +996,7 @@ export default function App(){
             fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",
             transition:"all 0.15s",
           }}>
-            {enabled[activePlay.id]?"\u2715 Exclude from Summary":"+ Include in Summary"}
+            {enabled[activePlay.id]?"✕ Exclude from Summary":"+ Include in Summary"}
           </button>
         )}
       </div>
@@ -1023,7 +1023,7 @@ export default function App(){
       {/* FOOTER */}
       <div style={{borderTop:"1px solid #E8E8E8",padding:"10px 32px",display:"flex",justifyContent:"space-between",alignItems:"center",background:B.offWhite}}>
         <span style={{fontSize:9,color:B.gray}}>* Illustrative estimates based on Augment Code pilot data and industry benchmarks.</span>
-        <span style={{fontSize:9,color:B.gray,letterSpacing:"0.08em",textTransform:"uppercase"}}>PRIVILEGED &amp; CONFIDENTIAL \u00b7 augment code</span>
+        <span style={{fontSize:9,color:B.gray,letterSpacing:"0.08em",textTransform:"uppercase"}}>PRIVILEGED &amp; CONFIDENTIAL · augment code</span>
       </div>
     </div>
   );
