@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/roi-calc/static/js/main.f58dedfb.js",
+    "index.html": "/roi-calc/index.html",
+    "main.f58dedfb.js.map": "/roi-calc/static/js/main.f58dedfb.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.f58dedfb.js"
+  ]
+}
