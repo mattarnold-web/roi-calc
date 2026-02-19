@@ -13,7 +13,7 @@ const USE_CASES = [
   {
     id:"code-review", label:"Code Review", number:"01",
     tagline:"Recover senior engineering time. Ship faster. Catch more bugs.",
-    description:"Augment's Context Engine acts as a codebase-aware reviewer on every PR \u2014 cutting repetitive review work by 30\u201350%, flagging real bugs, and accelerating merge cycles across your entire org.",
+    description:"Augment's Context Engine acts as a codebase-aware reviewer on every PR — cutting repetitive review work by 30–50%, flagging real bugs, and accelerating merge cycles across your entire org.",
     savingsRange:[0.30,0.40,0.50], savingsLabel:"Review time recovered",
     evalCategories:[
       {
@@ -80,22 +80,22 @@ const USE_CASES = [
       {key:"roi",label:"Return on investment",format:"percent",highlight:true},
     ],
     benchmarks:[
-      {stat:"55\u201370%",label:"Comment address rate (industry-leading)"},
-      {stat:"30\u201350%",label:"Reduction in senior review time"},
-      {stat:"40%\u2193",label:"Faster time-to-first-review"},
+      {stat:"55–70%",label:"Comment address rate (industry-leading)"},
+      {stat:"30–50%",label:"Reduction in senior review time"},
+      {stat:"40%↓",label:"Faster time-to-first-review"},
       {stat:"~90%",label:"Bug detection rate"},
     ],
     successThresholds:[
-      {key:"ttfr",label:"% Faster Time-to-First-Review",target:40,unit:"%",desc:"Target: \u226540% reduction in TTF-review"},
-      {key:"commentRate",label:"Augment Comment Address Rate",target:55,unit:"%",desc:"Target: \u226555% of comments actioned by devs"},
-      {key:"prCoverage",label:"% Eligible PRs Receiving Augment Review",target:70,unit:"%",desc:"Target: \u226570% adoption across pilot PRs"},
-      {key:"seniorTimeFreed",label:"Senior Time Freed (hrs/week self-reported)",target:3,unit:"hrs",desc:"Target: \u22653 hrs/week per senior reviewer",isAbsolute:true,max:20},
+      {key:"ttfr",label:"% Faster Time-to-First-Review",target:40,unit:"%",desc:"Target: ≥40% reduction in TTF-review"},
+      {key:"commentRate",label:"Augment Comment Address Rate",target:55,unit:"%",desc:"Target: ≥55% of comments actioned by devs"},
+      {key:"prCoverage",label:"% Eligible PRs Receiving Augment Review",target:70,unit:"%",desc:"Target: ≥70% adoption across pilot PRs"},
+      {key:"seniorTimeFreed",label:"Senior Time Freed (hrs/week self-reported)",target:3,unit:"hrs",desc:"Target: ≥3 hrs/week per senior reviewer",isAbsolute:true,max:20},
     ],
   },
   {
     id:"unit-test", label:"Unit Test Automation", number:"02",
     tagline:"Give engineers back their week. Ship with confidence.",
-    description:"Engineers spend ~10% of their week writing and maintaining unit tests. Augment generates codebase-aware tests, boosts coverage, and auto-fixes CI failures \u2014 removing grunt work without sacrificing quality.",
+    description:"Engineers spend ~10% of their week writing and maintaining unit tests. Augment generates codebase-aware tests, boosts coverage, and auto-fixes CI failures — removing grunt work without sacrificing quality.",
     savingsRange:[0.30,0.50,0.70], savingsLabel:"Test time automated",
     evalCategories:[
       {
@@ -164,20 +164,20 @@ const USE_CASES = [
     ],
     benchmarks:[
       {stat:"~10%",label:"Of dev week spent on unit tests"},
-      {stat:"30\u201350%",label:"Reduction in test-related CI failures"},
-      {stat:"\u226580%",label:"Generated test correctness target"},
-      {stat:"3\u20135\u00d7",label:"ROI with time + defect avoidance"},
+      {stat:"30–50%",label:"Reduction in test-related CI failures"},
+      {stat:"≥80%",label:"Generated test correctness target"},
+      {stat:"3–5×",label:"ROI with time + defect avoidance"},
     ],
     successThresholds:[
-      {key:"timeReduction",label:"% Reduction in Test-Writing Time (pilot modules)",target:50,unit:"%",desc:"Target: \u226550% reduction on pilot-scope modules"},
-      {key:"coverageGain",label:"Coverage Gain on Pilot Targets (pts)",target:20,unit:"pts",desc:"Target: \u2265+20 pts coverage on pilot services",isAbsolute:true,max:40},
-      {key:"testCorrectness",label:"% Generated Tests Considered Correct / Usable",target:80,unit:"%",desc:"Target: \u226580% correctness as judged by devs or CI"},
+      {key:"timeReduction",label:"% Reduction in Test-Writing Time (pilot modules)",target:50,unit:"%",desc:"Target: ≥50% reduction on pilot-scope modules"},
+      {key:"coverageGain",label:"Coverage Gain on Pilot Targets (pts)",target:20,unit:"pts",desc:"Target: ≥+20 pts coverage on pilot services",isAbsolute:true,max:40},
+      {key:"testCorrectness",label:"% Generated Tests Considered Correct / Usable",target:80,unit:"%",desc:"Target: ≥80% correctness as judged by devs or CI"},
     ],
   },
   {
     id:"build-failure", label:"Build Failure Analyzer", number:"03",
     tagline:"From red to green in minutes, not hours.",
-    description:"Augment correlates code changes, tests, logs, and ownership into a coherent triage story \u2014 diagnosing failures, routing to the right engineer, and proposing fixes before the team opens Slack.",
+    description:"Augment correlates code changes, tests, logs, and ownership into a coherent triage story — diagnosing failures, routing to the right engineer, and proposing fixes before the team opens Slack.",
     savingsRange:[0.50,0.70,0.80], savingsLabel:"MTTR reduction",
     evalCategories:[
       {
@@ -248,21 +248,21 @@ const USE_CASES = [
       {key:"roi",label:"Return on investment",format:"percent",highlight:true},
     ],
     benchmarks:[
-      {stat:"60\u201380%",label:"MTTR reduction \u2014 hours to minutes"},
+      {stat:"60–80%",label:"MTTR reduction — hours to minutes"},
       {stat:"65%",label:"Reduction in CI firefighting"},
-      {stat:"~10\u00d7",label:"ROI on platform automation"},
+      {stat:"~10×",label:"ROI on platform automation"},
       {stat:"2.5%",label:"Dev time lost to flaky tests (recoverable)"},
     ],
     successThresholds:[
-      {key:"triageReduction",label:"% Reduction in Average Triage Time",target:60,unit:"%",desc:"Target: \u226560% reduction in time to identify cause"},
-      {key:"mttrReduction",label:"% Faster MTTR (Red-to-Green)",target:70,unit:"%",desc:"Target: \u226570% faster mean time to remediation"},
-      {key:"autoClassified",label:"% of Failures Auto-Classified / Routed",target:65,unit:"%",desc:"Target: \u226565% of failures classified without manual triage"},
+      {key:"triageReduction",label:"% Reduction in Average Triage Time",target:60,unit:"%",desc:"Target: ≥60% reduction in time to identify cause"},
+      {key:"mttrReduction",label:"% Faster MTTR (Red-to-Green)",target:70,unit:"%",desc:"Target: ≥70% faster mean time to remediation"},
+      {key:"autoClassified",label:"% of Failures Auto-Classified / Routed",target:65,unit:"%",desc:"Target: ≥65% of failures classified without manual triage"},
     ],
   },
   {
     id:"interactive", label:"Interactive (IDE + CLI)", number:"04",
     tagline:"Every developer. Every day. Measurable productivity at scale.",
-    description:"Augment's IDE and interactive CLI give every engineer a context-aware coding partner \u2014 saving hours on boilerplate, onboarding, and code navigation while consolidating your existing tool sprawl into one unified platform.",
+    description:"Augment's IDE and interactive CLI give every engineer a context-aware coding partner — saving hours on boilerplate, onboarding, and code navigation while consolidating your existing tool sprawl into one unified platform.",
     savingsRange:[0.60,0.80,1.00], savingsLabel:"Productivity uplift captured",
     evalCategories:[
       {
@@ -321,9 +321,9 @@ const USE_CASES = [
       {key:"roi",label:"Return on investment",format:"percent",highlight:true},
     ],
     benchmarks:[
-      {stat:"1\u20135+ hrs",label:"Saved per dev per week in pilots"},
+      {stat:"1–5+ hrs",label:"Saved per dev per week in pilots"},
       {stat:"60K+",label:"Annual hours saved at 100-dev scale"},
-      {stat:"~10\u00d7",label:"Platform-level ROI in internal decks"},
+      {stat:"~10×",label:"Platform-level ROI in internal decks"},
       {stat:"$3M+",label:"Productivity value at scale"},
     ],
     successThresholds:null,
@@ -425,7 +425,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
   rect(0,0,W,80,black);
   rect(0,80,W,4,green);
   txt("COMBINED ROI SUMMARY", margin, 35, {size:8, color:[34,201,122], bold:true});
-  txt(customerName ? customerName+" \u00d7 Augment Code" : "Full Platform ROI Summary", margin, 58, {size:20, color:white, bold:true});
+  txt(customerName ? customerName+" × Augment Code" : "Full Platform ROI Summary", margin, 58, {size:20, color:white, bold:true});
   txt(useCaseCount+" use case"+(useCaseCount>1?"s":"")+", "+allCatResults.length+" evaluation categor"+(allCatResults.length===1?"y":"ies"), margin, 72, {size:9, color:gray});
 
   // Summary KPI boxes
@@ -492,7 +492,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
   if(sy < H-80) {
     rect(margin-4, sy-4, W-margin*2+8, 50, black);
     txt("EXECUTIVE NARRATIVE", margin+4, sy+10, {size:7, color:[34,201,122], bold:true});
-    const narrative = "Across "+useCaseCount+" active Augment Code use case"+(useCaseCount>1?"s":"")+" and "+allCatResults.length+" evaluation categor"+(allCatResults.length===1?"y":"ies")+", the platform delivers $"+Math.round(grandTotal).toLocaleString()+" in annual benefit against a $"+Math.round(grandCost).toLocaleString()+" investment \u2014 a "+Math.round(grandROI)+"% combined ROI with a payback period of "+grandPayback.toFixed(1)+" months, recovering "+grandFTE.toFixed(1)+" FTEs of engineering capacity annually.";
+    const narrative = "Across "+useCaseCount+" active Augment Code use case"+(useCaseCount>1?"s":"")+" and "+allCatResults.length+" evaluation categor"+(allCatResults.length===1?"y":"ies")+", the platform delivers $"+Math.round(grandTotal).toLocaleString()+" in annual benefit against a $"+Math.round(grandCost).toLocaleString()+" investment — a "+Math.round(grandROI)+"% combined ROI with a payback period of "+grandPayback.toFixed(1)+" months, recovering "+grandFTE.toFixed(1)+" FTEs of engineering capacity annually.";
     const lines = doc.splitTextToSize(narrative, W-margin*2-16);
     doc.setFontSize(8); doc.setTextColor(200,200,200); doc.setFont("helvetica","normal");
     doc.text(lines, margin+4, sy+24);
@@ -501,7 +501,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
   // Footer
   rect(0, H-24, W, 24, [245,245,245]);
   txt("* Illustrative estimates based on Augment Code pilot data and industry benchmarks.", margin, H-10, {size:6, color:gray});
-  txt("PRIVILEGED & CONFIDENTIAL \u00b7 AUGMENT CODE", W-margin, H-10, {size:6, color:gray, align:"right"});
+  txt("PRIVILEGED & CONFIDENTIAL · AUGMENT CODE", W-margin, H-10, {size:6, color:gray, align:"right"});
 
   // ═══════════════════════════════════════════
   // PAGES 3+: ONE PAGE PER ENABLED USE CASE
@@ -525,7 +525,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     // Header
     rect(0,0,W,80,black);
     rect(0,80,W,4,green);
-    txt("AUTOMATION USE CASE "+useCase.number+" \u00b7 "+cats.length+" CATEGOR"+(cats.length===1?"Y":"IES")+" ACTIVE", margin, 30, {size:8, color:[34,201,122], bold:true});
+    txt("AUTOMATION USE CASE "+useCase.number+" · "+cats.length+" CATEGOR"+(cats.length===1?"Y":"IES")+" ACTIVE", margin, 30, {size:8, color:[34,201,122], bold:true});
     txt(useCase.label, margin, 52, {size:20, color:white, bold:true});
     txt(useCase.tagline, margin, 68, {size:9, color:[26,170,110]});
 
@@ -536,7 +536,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     txt("$"+Math.round(ucBenefit).toLocaleString(), badgeX+6, 48, {size:12, color:white, bold:true});
     rect(badgeX+88, 16, 80, 48, green);
     txt("Combined ROI", badgeX+94, 30, {size:6, color:[200,255,200]});
-    txt(roiMultiple+"\u00d7", badgeX+94, 50, {size:18, color:white, bold:true});
+    txt(roiMultiple+"×", badgeX+94, 50, {size:18, color:white, bold:true});
 
     let py = 100;
 
@@ -601,7 +601,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
         const statusColor = met ? green : val >= t.target*0.75 ? [212,160,23] : gray;
         txt(t.label, margin+8, py, {size:7, color:black});
         txt(val+t.unit+" / "+t.target+t.unit, margin+350, py, {size:8, color:statusColor, bold:true});
-        txt(met?"\u2713 Met":"Below Target", margin+460, py, {size:7, color:statusColor, bold:true});
+        txt(met?"✓ Met":"Below Target", margin+460, py, {size:7, color:statusColor, bold:true});
         py += 14;
       });
     }
@@ -609,7 +609,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     // Footer
     rect(0, H-24, W, 24, [245,245,245]);
     txt("* Illustrative estimates based on Augment Code pilot data and industry benchmarks.", margin, H-10, {size:6, color:gray});
-    txt("PRIVILEGED & CONFIDENTIAL \u00b7 AUGMENT CODE", W-margin, H-10, {size:6, color:gray, align:"right"});
+    txt("PRIVILEGED & CONFIDENTIAL · AUGMENT CODE", W-margin, H-10, {size:6, color:gray, align:"right"});
   });
 
   // Save
@@ -620,7 +620,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
 // ─── HELPERS ───
 
 const fmt=(val,format)=>{
-  if(val===undefined||val===null||isNaN(val)) return "\u2014";
+  if(val===undefined||val===null||isNaN(val)) return "—";
   if(format==="dollar") return "$"+Math.round(val).toLocaleString();
   if(format==="percent") return Math.round(val)+"%";
   if(format==="hours") return Math.round(val).toLocaleString()+" hrs";
@@ -687,7 +687,7 @@ function ThresholdMeter({threshold,value,onChange}){
         <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0,marginLeft:10}}>
           <span style={{fontSize:9,color:B.gray}}>Target: <strong style={{color:B.darkGray}}>{threshold.target}{threshold.unit}</strong></span>
           <span style={{fontSize:14,fontWeight:700,color}}>{value}{threshold.unit}</span>
-          <span style={{fontSize:12}}>{untouched?"\u25cb":met?"\u2713":"\u25cb"}</span>
+          <span style={{fontSize:12}}>{untouched?"○":met?"✓":"○"}</span>
         </div>
       </div>
       <div style={{position:"relative",height:5,background:"rgba(0,0,0,0.08)",borderRadius:3}}>
@@ -698,7 +698,7 @@ function ThresholdMeter({threshold,value,onChange}){
           style={{position:"absolute",top:-8,left:0,width:"100%",height:20,WebkitAppearance:"none",appearance:"none",background:"transparent",outline:"none",cursor:"pointer",margin:0}}/>
       </div>
       <div style={{display:"flex",justifyContent:"flex-end",marginTop:3}}>
-        <span style={{fontSize:8,color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>{untouched?"Not Evaluated":met?"\u2713 Threshold Met":"Below Target"}</span>
+        <span style={{fontSize:8,color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>{untouched?"Not Evaluated":met?"✓ Threshold Met":"Below Target"}</span>
       </div>
     </div>
   );
@@ -728,7 +728,7 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
           ))}
           {/* Scenario mini-selector */}
           <div style={{marginTop:8,padding:"10px 12px",background:B.offWhite,borderRadius:4}}>
-            <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>{useCase.savingsLabel} \u2014 Scenario</div>
+            <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>{useCase.savingsLabel} — Scenario</div>
             <div style={{display:"flex",gap:4}}>
               {SL.map((label,i)=>(
                 <button key={label} onClick={()=>setScenarioIdx(i)} style={{
@@ -747,7 +747,7 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
         </div>
         {/* RIGHT: results */}
         <div>
-          <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Results \u2014 {cat.label}</div>
+          <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Results — {cat.label}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {useCase.metrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]}/>)}
           </div>
@@ -794,7 +794,7 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
       <div style={{background:B.black,padding:"20px 32px 18px",borderBottom:`4px solid ${B.green}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:14}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>AUTOMATION USE CASE {useCase.number} \u00b7 {enabledCats.length} CATEGOR{enabledCats.length===1?"Y":"IES"} ACTIVE</div>
+            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>AUTOMATION USE CASE {useCase.number} · {enabledCats.length} CATEGOR{enabledCats.length===1?"Y":"IES"} ACTIVE</div>
             <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4,lineHeight:1.2}}>{useCase.label}</h2>
             <p style={{fontSize:11,color:B.greenLight,fontWeight:500,marginBottom:5}}>{useCase.tagline}</p>
             <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>{useCase.description}</p>
@@ -812,7 +812,7 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
             </div>
             <div style={{background:B.green,borderRadius:4,padding:"10px 16px",textAlign:"center"}}>
               <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Combined ROI</div>
-              <div style={{fontSize:26,fontWeight:700,color:B.white,lineHeight:1}}>{roiMultiple}\u00d7</div>
+              <div style={{fontSize:26,fontWeight:700,color:B.white,lineHeight:1}}>{roiMultiple}×</div>
               <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:2}}>{enabledCats.length} cat{enabledCats.length>1?"s":""}</div>
             </div>
           </div>
@@ -826,7 +826,7 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
           return cat?(
             <span key={catId} style={{display:"inline-flex",alignItems:"center",gap:4,background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:3,padding:"4px 10px",fontSize:9,fontWeight:600,color:B.greenDark}}>
               {cat.label}
-              {enabledCats.length>1&&<button onClick={()=>onToggleCat(catId)} style={{background:"none",border:"none",cursor:"pointer",color:B.red,fontSize:10,fontWeight:700,marginLeft:2,padding:0}}>\u00d7</button>}
+              {enabledCats.length>1&&<button onClick={()=>onToggleCat(catId)} style={{background:"none",border:"none",cursor:"pointer",color:B.red,fontSize:10,fontWeight:700,marginLeft:2,padding:0}}>×</button>}
             </span>
           ):null;
         })}
@@ -910,7 +910,7 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px",marginBottom:14}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Executive Summary</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9}}>
-            Across <span style={{color:B.greenBright,fontWeight:700}}>{enabledCats.length} evaluation categor{enabledCats.length===1?"y":"ies"}</span> ({catResults.map(r=>r.cat.label).join(", ")}), this use case delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(combinedBenefit).toLocaleString()}</span> in combined annual benefit, recovering <span style={{color:B.white,fontWeight:700}}>{combinedFTE.toFixed(1)} FTEs</span> of engineering capacity \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(combinedROI)}% ROI</span> against a <span style={{color:B.white,fontWeight:700}}>${(combinedCost).toLocaleString()}</span> investment.
+            Across <span style={{color:B.greenBright,fontWeight:700}}>{enabledCats.length} evaluation categor{enabledCats.length===1?"y":"ies"}</span> ({catResults.map(r=>r.cat.label).join(", ")}), this use case delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(combinedBenefit).toLocaleString()}</span> in combined annual benefit, recovering <span style={{color:B.white,fontWeight:700}}>{combinedFTE.toFixed(1)} FTEs</span> of engineering capacity — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(combinedROI)}% ROI</span> against a <span style={{color:B.white,fontWeight:700}}>${(combinedCost).toLocaleString()}</span> investment.
           </p>
         </div>
         {/* Success Thresholds with toggle */}
@@ -956,7 +956,7 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
                 </div>
                 <div style={{marginTop:10,padding:"8px 12px",background:metCount===thresholdResults.length?B.greenBg:B.amberBg,border:`1px solid ${metCount===thresholdResults.length?B.green:B.amber}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontSize:9,color:B.darkGray}}>Pilot success score</span>
-                  <span style={{fontSize:13,fontWeight:700,color:metCount===thresholdResults.length?B.greenDark:B.amber}}>{metCount} of {thresholdResults.length} thresholds met {metCount===thresholdResults.length?"\u2713":"\u2014 in progress"}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:metCount===thresholdResults.length?B.greenDark:B.amber}}>{metCount} of {thresholdResults.length} thresholds met {metCount===thresholdResults.length?"✓":"— in progress"}</span>
                 </div>
               </>
             ):(
@@ -972,7 +972,7 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
 function DisabledTab({useCase,onEnable}){
   return(
     <div style={{padding:"60px 32px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,minHeight:300}}>
-      <div style={{width:48,height:48,borderRadius:8,background:B.offWhite,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:B.gray}}>\u25cc</div>
+      <div style={{width:48,height:48,borderRadius:8,background:B.offWhite,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:B.gray}}>◌</div>
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:14,fontWeight:700,color:B.darkGray,marginBottom:4}}>{useCase.label} is excluded</div>
         <div style={{fontSize:11,color:B.gray}}>This use case is not included in the Summary or PDF export.</div>
@@ -1014,7 +1014,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:14}}>
           <div style={{flex:1}}>
             <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>COMBINED ROI SUMMARY</div>
-            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4}}>{customerName?customerName+" \u00d7 Augment Code":"Full Platform ROI Summary"}</h2>
+            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4}}>{customerName?customerName+" × Augment Code":"Full Platform ROI Summary"}</h2>
             <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>Consolidated view across {useCaseCount} use case{useCaseCount>1?"s":""}, {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}.</p>
           </div>
           <div style={{display:"flex",gap:8}}>
@@ -1032,7 +1032,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
         <div style={{textAlign:"right",marginBottom:16}}>
           <button onClick={()=>generatePDF(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot)}
             style={{background:B.green,color:"white",border:"none",padding:"10px 24px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:6}}>
-            <span style={{fontSize:14}}>\u2193</span> Export to PDF
+            <span style={{fontSize:14}}>↓</span> Export to PDF
           </button>
         </div>
         {/* Per-category breakdown table */}
@@ -1084,7 +1084,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
               return(
                 <div key={r.useCase.id+"-"+r.catId} style={{marginBottom:10}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                    <span style={{fontSize:9,color:B.darkGray,fontWeight:600}}>{r.useCase.label} \u2014 {r.categoryLabel}</span>
+                    <span style={{fontSize:9,color:B.darkGray,fontWeight:600}}>{r.useCase.label} — {r.categoryLabel}</span>
                     <span style={{fontSize:9,fontWeight:700,color:B.black}}>${Math.round(r.results.totalBenefit).toLocaleString()} ({share.toFixed(0)}%)</span>
                   </div>
                   <div style={{height:4,background:B.offWhite,borderRadius:3,overflow:"hidden"}}>
@@ -1117,7 +1117,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
+            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
           </p>
         </div>
       </div>
@@ -1263,11 +1263,11 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:24,height:24,borderRadius:4,background:B.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:B.white}}>A</div>
           <span style={{fontSize:10,fontWeight:700,color:B.white,letterSpacing:"0.1em",textTransform:"uppercase"}}>augment code</span>
-          <span style={{color:B.darkGray,margin:"0 4px"}}>\u00b7</span>
+          <span style={{color:B.darkGray,margin:"0 4px"}}>·</span>
           {editingName?(
             <input type="text" value={customerName} onChange={e=>setCustomerName(e.target.value)}
               onBlur={()=>setEditingName(false)} onKeyDown={e=>e.key==="Enter"&&setEditingName(false)}
-              autoFocus placeholder="Customer name\u2026"
+              autoFocus placeholder="Customer name…"
               style={{background:"transparent",border:"none",borderBottom:`1px solid ${B.green}`,color:B.white,fontSize:10,outline:"none",width:180}}/>
           ):(
             <span onClick={()=>setEditingName(true)} style={{fontSize:10,color:customerName?B.greenLight:B.gray,cursor:"pointer",borderBottom:`1px dashed ${B.darkGray}`}}>
@@ -1292,7 +1292,7 @@ export default function App(){
             fontSize:10,letterSpacing:"0.06em",textTransform:"uppercase",
             display:"flex",alignItems:"center",gap:5,
           }}>
-            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:2,background:activeTab==="summary"?B.green:"transparent",border:`1px solid ${activeTab==="summary"?B.green:B.gray}`,fontSize:8,fontWeight:700,color:activeTab==="summary"?B.white:B.gray}}>\u03a3</span>
+            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:2,background:activeTab==="summary"?B.green:"transparent",border:`1px solid ${activeTab==="summary"?B.green:B.gray}`,fontSize:8,fontWeight:700,color:activeTab==="summary"?B.white:B.gray}}>Σ</span>
             Summary
           </button>
         </div>
@@ -1306,7 +1306,7 @@ export default function App(){
             color:enabled[activeUseCase.id]?B.red:B.green,
             fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",
           }}>
-            {enabled[activeUseCase.id]?"\u2715 Exclude":"+ Include"}
+            {enabled[activeUseCase.id]?"✕ Exclude":"+ Include"}
           </button>
         )}
       </div>
@@ -1337,7 +1337,7 @@ export default function App(){
       {/* FOOTER */}
       <div style={{borderTop:"1px solid #E8E8E8",padding:"8px 32px",display:"flex",justifyContent:"space-between",alignItems:"center",background:B.offWhite}}>
         <span style={{fontSize:9,color:B.gray}}>* Illustrative estimates based on Augment Code pilot data and industry benchmarks.</span>
-        <span style={{fontSize:9,color:B.gray,letterSpacing:"0.06em",textTransform:"uppercase"}}>PRIVILEGED & CONFIDENTIAL \u00b7 augment code</span>
+        <span style={{fontSize:9,color:B.gray,letterSpacing:"0.06em",textTransform:"uppercase"}}>PRIVILEGED & CONFIDENTIAL · augment code</span>
       </div>
     </div>
   );
