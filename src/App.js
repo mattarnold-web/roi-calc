@@ -520,8 +520,6 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     });
     const ucBenefit = catResults.reduce((s,r) => s+r.results.totalBenefit, 0);
     const ucCost = Math.max(...catResults.map(r => r.augmentCost), 0);
-    const ucROI = ucCost > 0 ? ((ucBenefit-ucCost)/ucCost)*100 : 0;
-    const ucFTE = catResults.reduce((s,r) => s+(r.results.fteEquivalent||0), 0);
     const roiMultiple = ucCost > 0 ? (ucBenefit/ucCost).toFixed(1) : "0";
 
     // Header
