@@ -566,7 +566,7 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
               <div key={bar.label} style={{marginBottom:10}}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                   <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase",letterSpacing:"0.04em"}}>{bar.label}</span>
-                  <span style={{fontSize:11,fontWeight:700,color:B.black}}>${DS}{Math.round(bar.value).toLocaleString()}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:B.black}}>${Math.round(bar.value).toLocaleString()}</span>
                 </div>
                 <div style={{height:5,background:B.offWhite,borderRadius:2,overflow:"hidden"}}>
                   <div style={{height:"100%",width:`${Math.min(100,(bar.value/Math.max(results.totalBenefit,vals.augmentCost||180000))*100)}%`,background:bar.color,borderRadius:2,transition:"width 0.35s ease"}}/>
@@ -575,14 +575,14 @@ function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setS
             ))}
             <div style={{marginTop:8,padding:"9px 12px",background:results.totalBenefit>(vals.augmentCost||180000)?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>(vals.augmentCost||180000)?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase",letterSpacing:"0.06em"}}>Net Annual Benefit</span>
-              <span style={{fontSize:16,fontWeight:700,color:results.totalBenefit>(vals.augmentCost||180000)?B.greenDark:B.red}}>${DS}{Math.round(results.totalBenefit-(vals.augmentCost||180000)).toLocaleString()}</span>
+              <span style={{fontSize:16,fontWeight:700,color:results.totalBenefit>(vals.augmentCost||180000)?B.greenDark:B.red}}>${Math.round(results.totalBenefit-(vals.augmentCost||180000)).toLocaleString()}</span>
             </div>
           </div>
           {/* Exec summary */}
           <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
             <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Executive Summary</div>
             <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9}}>
-              Using the <span style={{color:B.greenBright,fontWeight:700}}>{currentCat.label}</span> lens at the <span style={{color:B.greenBright,fontWeight:700}}>{SL[scenarioIdx].toLowerCase()}</span> scenario ({Math.round(pct*100)}% {play.savingsLabel.toLowerCase()}), Augment delivers <span style={{color:B.white,fontWeight:700}}>${DS}{Math.round(results.totalBenefit).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${DS}{(vals.augmentCost||180000).toLocaleString()}</span> investment \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(results.roi)}% ROI</span> with payback in <span style={{color:B.greenBright,fontWeight:700}}>{results.payback.toFixed(1)} months</span>. Recovering <span style={{color:B.white,fontWeight:700}}>{results.fteEquivalent.toFixed(1)} FTEs</span> of engineering capacity per year.
+              Using the <span style={{color:B.greenBright,fontWeight:700}}>{currentCat.label}</span> lens at the <span style={{color:B.greenBright,fontWeight:700}}>{SL[scenarioIdx].toLowerCase()}</span> scenario ({Math.round(pct*100)}% {play.savingsLabel.toLowerCase()}), Augment delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(results.totalBenefit).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${(vals.augmentCost||180000).toLocaleString()}</span> investment \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(results.roi)}% ROI</span> with payback in <span style={{color:B.greenBright,fontWeight:700}}>{results.payback.toFixed(1)} months</span>. Recovering <span style={{color:B.white,fontWeight:700}}>{results.fteEquivalent.toFixed(1)} FTEs</span> of engineering capacity per year.
             </p>
           </div>
         </div>
@@ -688,9 +688,9 @@ function SummaryTab({allResults,customerName}){
                   </td>
                   <td style={{padding:"10px 8px 10px 0",fontSize:9,color:B.gray}}>{r.categoryLabel}</td>
                   <td style={{padding:"10px 8px 10px 0",fontSize:9,color:B.gray}}>{SL[r.scenarioIdx]}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>${DS}{Math.round(r.results.totalBenefit).toLocaleString()}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>${DS}{Math.round(r.augmentCost).toLocaleString()}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:r.results.totalBenefit>r.augmentCost?B.greenDark:B.red}}>${DS}{Math.round(r.results.totalBenefit-r.augmentCost).toLocaleString()}</td>
+                  <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>${Math.round(r.results.totalBenefit).toLocaleString()}</td>
+                  <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>${Math.round(r.augmentCost).toLocaleString()}</td>
+                  <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:r.results.totalBenefit>r.augmentCost?B.greenDark:B.red}}>${Math.round(r.results.totalBenefit-r.augmentCost).toLocaleString()}</td>
                   <td style={{padding:"10px 8px 10px 0"}}><span style={{fontSize:11,fontWeight:700,color:B.green,background:B.greenBg,padding:"2px 7px",borderRadius:3}}>{Math.round(r.results.roi)}%</span></td>
                   <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>{(r.results.fteEquivalent||0).toFixed(1)}</td>
                   <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>{r.results.payback.toFixed(1)} mo</td>
@@ -700,9 +700,9 @@ function SummaryTab({allResults,customerName}){
             <tfoot>
               <tr style={{borderTop:`2px solid ${B.green}`,background:B.greenBg}}>
                 <td colSpan={3} style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>TOTAL ({allResults.length} plays)</td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:13,fontWeight:700,color:B.greenDark}}>${DS}{Math.round(grandTotal).toLocaleString()}</td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>${DS}{Math.round(grandCost).toLocaleString()}</td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:13,fontWeight:700,color:B.greenDark}}>${DS}{Math.round(grandNet).toLocaleString()}</td>
+                <td style={{padding:"10px 8px 10px 0",fontSize:13,fontWeight:700,color:B.greenDark}}>${Math.round(grandTotal).toLocaleString()}</td>
+                <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>${Math.round(grandCost).toLocaleString()}</td>
+                <td style={{padding:"10px 8px 10px 0",fontSize:13,fontWeight:700,color:B.greenDark}}>${Math.round(grandNet).toLocaleString()}</td>
                 <td style={{padding:"10px 8px 10px 0"}}><span style={{fontSize:13,fontWeight:700,color:B.white,background:B.green,padding:"3px 9px",borderRadius:3}}>{Math.round(grandROI)}%</span></td>
                 <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>{grandFTE.toFixed(1)}</td>
                 <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>{grandPayback.toFixed(1)} mo</td>
@@ -720,7 +720,7 @@ function SummaryTab({allResults,customerName}){
                 <div key={r.play.id} style={{marginBottom:12}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                     <span style={{fontSize:10,color:B.darkGray,fontWeight:600}}>{r.play.label}</span>
-                    <span style={{fontSize:10,fontWeight:700,color:B.black}}>${DS}{Math.round(r.results.totalBenefit).toLocaleString()} <span style={{color:B.gray,fontWeight:400,fontSize:9}}>({share.toFixed(0)}%)</span></span>
+                    <span style={{fontSize:10,fontWeight:700,color:B.black}}>${Math.round(r.results.totalBenefit).toLocaleString()} <span style={{color:B.gray,fontWeight:400,fontSize:9}}>({share.toFixed(0)}%)</span></span>
                   </div>
                   <div style={{height:5,background:B.offWhite,borderRadius:3,overflow:"hidden"}}>
                     <div style={{height:"100%",width:share+"%",background:B.green,borderRadius:3,transition:"width 0.5s ease"}}/>
@@ -751,7 +751,7 @@ function SummaryTab({allResults,customerName}){
         <div style={{background:B.black,borderRadius:4,padding:"16px 18px"}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {allResults.length} active Augment Code automation play{allResults.length>1?"s":""} ({allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <span style={{color:B.white,fontWeight:700}}>${DS}{Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${DS}{Math.round(grandCost).toLocaleString()}</span> platform investment \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering the equivalent of <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
+            Across {allResults.length} active Augment Code automation play{allResults.length>1?"s":""} ({allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> platform investment \u2014 a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering the equivalent of <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
           </p>
         </div>
       </div>
