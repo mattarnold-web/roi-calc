@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
 
-// ─── BRAND ────────────────────────────────────────────────────────────────────
-
 const B = {
   black:"#0D0D0D", green:"#158158", greenLight:"#1AAA6E",
   greenBright:"#22C97A", greenDark:"#0D6B48", white:"#FFFFFF",
@@ -9,8 +7,6 @@ const B = {
   darkGray:"#444444", greenBg:"#EBF5F0", red:"#D94F4F",
   redBg:"#FDF2F2", amber:"#D4A017", amberBg:"#FFFBEB",
 };
-
-// ─── PLAYS ───────────────────────────────────────────────────────────────────
 
 const PLAYS = [
   {
@@ -333,33 +329,25 @@ const PLAYS = [
   },
 ];
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// ─── HELPERS ───
 
 const fmt=(val,format)=>{
   if(val===undefined||val===null||isNaN(val)) return "—";
   if(format==="dollar") return "$"+Math.round(val).toLocaleString();
   if(format==="percent") return Math.round(val)+"%";
   if(format==="hours") return Math.round(val).toLocaleString()+" hrs";
-  if(format==="hours_val") return val<1?Math.round(val*60)+" min":val.toFixed(1)+" hrs";
   if(format==="fte") return val.toFixed(1)+" FTEs";
   return String(val);
 };
 
 const SL=["Conservative","Midpoint","Optimistic"];
 
-// ─── SLIDER ───────────────────────────────────────────────────────────────────
-
 function Slider({input,value,onChange}){
   const pct=((value-input.min)/(input.max-input.min))*100;
-  const dv=input.unit==="$"?"$"+value.toLocaleString()
-    :input.unit==="%"?value+"%"
-    :input.unit==="$/hr"?"$"+value+"/hr"
-    :input.unit==="hrs"?value+" hrs"
-    :input.unit==="wks"?value+" wks"
-    :value.toLocaleString();
+  const dv=input.unit==="$"?"$"+value.toLocaleString():input.unit==="%"?value+"%":input.unit==="$/hr"?"$"+value+"/hr":input.unit==="hrs"?value+" hrs":input.unit==="wks"?value+" wks":value.toLocaleString();
   return(
-    <div style={{marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+    <div style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
         <label style={{fontSize:10,color:B.gray,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:500}}>{input.label}</label>
         <span style={{fontSize:13,fontWeight:700,color:B.green}}>{dv}</span>
       </div>
@@ -374,28 +362,24 @@ function Slider({input,value,onChange}){
   );
 }
 
-// ─── METRIC CARD ─────────────────────────────────────────────────────────────
-
 function MetricCard({metric,value}){
   const f=fmt(value,metric.format);
   if(metric.highlight){
     const neg=metric.format==="percent"&&value<0;
     return(
-      <div style={{background:neg?B.redBg:B.greenBg,border:`2px solid ${neg?B.red:B.green}`,borderRadius:4,padding:"14px 16px"}}>
-        <div style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,marginBottom:5}}>{metric.label}</div>
-        <div style={{fontSize:24,fontWeight:700,color:neg?B.red:B.greenDark,lineHeight:1}}>{f}</div>
+      <div style={{background:neg?B.redBg:B.greenBg,border:`2px solid ${neg?B.red:B.green}`,borderRadius:4,padding:"12px 14px"}}>
+        <div style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,marginBottom:4}}>{metric.label}</div>
+        <div style={{fontSize:20,fontWeight:700,color:neg?B.red:B.greenDark,lineHeight:1}}>{f}</div>
       </div>
     );
   }
   return(
-    <div style={{background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"12px 14px"}}>
-      <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:500,marginBottom:4}}>{metric.label}</div>
-      <div style={{fontSize:18,fontWeight:700,color:B.black,lineHeight:1}}>{f}</div>
+    <div style={{background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"10px 12px"}}>
+      <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:500,marginBottom:3}}>{metric.label}</div>
+      <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>{f}</div>
     </div>
   );
 }
-
-// ─── THRESHOLD METER ─────────────────────────────────────────────────────────
 
 function ThresholdMeter({threshold,value,onChange}){
   const max=threshold.isAbsolute?threshold.max:100;
@@ -405,215 +389,265 @@ function ThresholdMeter({threshold,value,onChange}){
   const color=met?B.green:value>=(threshold.target*0.75)?B.amber:B.red;
   const bgColor=met?B.greenBg:value>=(threshold.target*0.75)?B.amberBg:B.redBg;
   return(
-    <div style={{background:bgColor,border:`1px solid ${color}33`,borderLeft:`3px solid ${color}`,borderRadius:4,padding:"14px 16px",marginBottom:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+    <div style={{background:bgColor,border:`1px solid ${color}33`,borderLeft:`3px solid ${color}`,borderRadius:4,padding:"12px 14px",marginBottom:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
         <div>
-          <div style={{fontSize:10,fontWeight:700,color:B.black,marginBottom:2}}>{threshold.label}</div>
+          <div style={{fontSize:10,fontWeight:700,color:B.black,marginBottom:1}}>{threshold.label}</div>
           <div style={{fontSize:9,color:B.gray}}>{threshold.desc}</div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,marginLeft:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0,marginLeft:10}}>
           <span style={{fontSize:9,color:B.gray}}>Target: <strong style={{color:B.darkGray}}>{threshold.target}{threshold.unit}</strong></span>
-          <span style={{fontSize:16,fontWeight:700,color}}>{value}{threshold.unit}</span>
-          <span style={{fontSize:14}}>{met?"✓":"○"}</span>
+          <span style={{fontSize:14,fontWeight:700,color}}>{value}{threshold.unit}</span>
+          <span style={{fontSize:12}}>{met?"✓":"○"}</span>
         </div>
       </div>
-      <div style={{position:"relative",height:6,background:"rgba(0,0,0,0.08)",borderRadius:3}}>
+      <div style={{position:"relative",height:5,background:"rgba(0,0,0,0.08)",borderRadius:3}}>
         <div style={{position:"absolute",top:0,left:0,bottom:0,width:Math.min(100,pct)+"%",background:color,borderRadius:3,transition:"width 0.1s"}}/>
-        <div style={{position:"absolute",top:-2,left:targetPct+"%",width:2,height:10,background:B.darkGray,borderRadius:1,transform:"translateX(-50%)"}}/>
-        <input type="range" min={0} max={max} step={threshold.isAbsolute?1:1} value={value}
+        <div style={{position:"absolute",top:-2,left:targetPct+"%",width:2,height:9,background:B.darkGray,borderRadius:1,transform:"translateX(-50%)"}}/>
+        <input type="range" min={0} max={max} step={1} value={value}
           onChange={e=>onChange(threshold.key,parseFloat(e.target.value))}
           style={{position:"absolute",top:-8,left:0,width:"100%",height:20,WebkitAppearance:"none",appearance:"none",background:"transparent",outline:"none",cursor:"pointer",margin:0}}/>
       </div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginTop:4}}>
+      <div style={{display:"flex",justifyContent:"flex-end",marginTop:3}}>
         <span style={{fontSize:8,color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>{met?"✓ Threshold Met":"Below Target"}</span>
       </div>
     </div>
   );
 }
 
-// ─── EVAL CATEGORY DROPDOWN ───────────────────────────────────────────────────
+// ─── CATEGORY PANEL (one per enabled category) ───
 
-function EvalCategorySelector({play,selectedCat,onSelect}){
-  const [open,setOpen]=useState(false);
-  const current=play.evalCategories.find(c=>c.id===selectedCat)||play.evalCategories[0];
-  return(
-    <div style={{position:"relative",marginBottom:16}}>
-      <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Evaluation Category</div>
-      <button onClick={()=>setOpen(!open)} style={{
-        width:"100%",background:B.white,border:`1px solid ${B.green}`,borderRadius:4,
-        padding:"10px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",
-        textAlign:"left",
-      }}>
-        <div>
-          <div style={{fontSize:11,fontWeight:700,color:B.black}}>{current.label}</div>
-          <div style={{fontSize:10,color:B.gray,marginTop:2}}>{current.desc}</div>
-        </div>
-        <span style={{fontSize:10,color:B.green,marginLeft:8,flexShrink:0}}>{open?"▲":"▼"}</span>
-      </button>
-      {open&&(
-        <div style={{position:"absolute",top:"100%",left:0,right:0,background:B.white,border:`1px solid ${B.green}`,borderTop:"none",borderRadius:"0 0 4px 4px",zIndex:100,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
-          {play.evalCategories.map((cat,i)=>(
-            <button key={cat.id} onClick={()=>{onSelect(cat.id);setOpen(false);}} style={{
-              width:"100%",background:selectedCat===cat.id?B.greenBg:B.white,
-              border:"none",borderBottom:i<play.evalCategories.length-1?"1px solid #F0F0F0":"none",
-              padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"block",
-            }}>
-              <div style={{fontSize:11,fontWeight:700,color:selectedCat===cat.id?B.greenDark:B.black}}>{cat.label}</div>
-              <div style={{fontSize:10,color:B.gray,marginTop:2}}>{cat.desc}</div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── PLAY TAB ─────────────────────────────────────────────────────────────────
-
-function PlayTab({play,vals,onChange,scenarioIdx,setScenarioIdx,selectedCat,setSelectedCat,thresholds,onThresholdChange}){
+function CategoryPanel({play,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly}){
   const pct=play.savingsRange[scenarioIdx];
-  const results=play.compute(vals,pct,selectedCat);
-  const roiMultiple=(results.totalBenefit/(vals.augmentCost||180000)).toFixed(1);
-  const currentCat=play.evalCategories.find(c=>c.id===selectedCat)||play.evalCategories[0];
-  const thresholdResults=play.successThresholds
-    ?play.successThresholds.map(t=>({...t,value:thresholds[t.key]??t.target,met:(thresholds[t.key]??0)>=t.target}))
-    :[];
-  const metCount=thresholdResults.filter(t=>t.met).length;
+  const results=play.compute(vals,pct,cat.id);
   return(
-    <div>
-      {/* Play header */}
-      <div style={{background:B.black,padding:"22px 32px 20px",borderBottom:`4px solid ${B.green}`}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:16}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:5}}>AUTOMATION PLAY {play.number} · {currentCat.label}</div>
-            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:5,lineHeight:1.2}}>{play.label}</h2>
-            <p style={{fontSize:12,color:B.greenLight,fontWeight:500,marginBottom:6}}>{play.tagline}</p>
-            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:580}}>{play.description}</p>
-          </div>
-          <div style={{display:"flex",gap:10,flexShrink:0}}>
-            {play.successThresholds&&(
-              <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:4,padding:"12px 16px",textAlign:"center"}}>
-                <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>Pilot Success</div>
-                <div style={{fontSize:22,fontWeight:700,color:metCount===thresholdResults.length?B.greenBright:B.amber,lineHeight:1}}>{metCount}/{thresholdResults.length}</div>
-                <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:2}}>thresholds met</div>
-              </div>
-            )}
-            <div style={{background:B.green,borderRadius:4,padding:"12px 20px",textAlign:"center"}}>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>ROI Multiple</div>
-              <div style={{fontSize:32,fontWeight:700,color:B.white,lineHeight:1}}>{roiMultiple}×</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",marginTop:2,textTransform:"uppercase",letterSpacing:"0.08em"}}>{SL[scenarioIdx]}</div>
-            </div>
-          </div>
+    <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
+      {/* Category header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:B.greenDark}}>{cat.label}</div>
+          <div style={{fontSize:9,color:B.gray}}>{cat.desc}</div>
         </div>
+        {!isOnly&&<button onClick={onRemove} style={{background:"transparent",border:`1px solid ${B.red}`,borderRadius:3,padding:"3px 8px",cursor:"pointer",color:B.red,fontSize:8,fontWeight:700,textTransform:"uppercase"}}>Remove</button>}
       </div>
-      {/* Main grid */}
-      <div style={{padding:"20px 32px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-        {/* LEFT */}
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"18px 20px"}}>
-            <EvalCategorySelector play={play} selectedCat={selectedCat} onSelect={cat=>{setSelectedCat(cat);}} />
-            <div style={{borderTop:"1px solid #F0F0F0",paddingTop:14,marginTop:2}}>
-              <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:14}}>Input Your Numbers</div>
-              {currentCat.inputs.map(inp=>(
-                <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}/>
-              ))}
-            </div>
-          </div>
-          {/* Scenario */}
-          <div style={{background:B.white,border:"1px solid #E8E8E8",borderRadius:4,padding:"14px 16px"}}>
-            <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>{play.savingsLabel} — Scenario</div>
-            <div style={{display:"flex",gap:8}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        {/* LEFT: inputs + scenario */}
+        <div>
+          <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Inputs</div>
+          {cat.inputs.map(inp=>(
+            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}/>
+          ))}
+          {/* Scenario mini-selector */}
+          <div style={{marginTop:8,padding:"10px 12px",background:B.offWhite,borderRadius:4}}>
+            <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>{play.savingsLabel} — Scenario</div>
+            <div style={{display:"flex",gap:4}}>
               {SL.map((label,i)=>(
                 <button key={label} onClick={()=>setScenarioIdx(i)} style={{
-                  flex:1,padding:"9px 6px",borderRadius:4,
+                  flex:1,padding:"6px 4px",borderRadius:3,
                   border:`1px solid ${scenarioIdx===i?B.green:"#E0E0E0"}`,
                   background:scenarioIdx===i?B.greenBg:B.white,
                   color:scenarioIdx===i?B.greenDark:B.gray,
-                  fontWeight:700,fontSize:9,cursor:"pointer",transition:"all 0.15s",textAlign:"center",
+                  fontWeight:700,fontSize:8,cursor:"pointer",textAlign:"center",
                 }}>
-                  <div style={{textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>{label}</div>
-                  <div style={{fontSize:14,color:scenarioIdx===i?B.green:B.darkGray}}>{Math.round(play.savingsRange[i]*100)}%</div>
+                  <div style={{textTransform:"uppercase",letterSpacing:"0.04em"}}>{label}</div>
+                  <div style={{fontSize:12,color:scenarioIdx===i?B.green:B.darkGray}}>{Math.round(play.savingsRange[i]*100)}%</div>
                 </button>
               ))}
             </div>
           </div>
-          {/* Benchmarks */}
-          <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
-            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Validated Pilot Outcomes</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {play.benchmarks.map((b,i)=>(
-                <div key={i} style={{background:"rgba(255,255,255,0.04)",borderLeft:`2px solid ${B.green}`,borderRadius:2,padding:"8px 10px"}}>
-                  <div style={{fontSize:14,fontWeight:700,color:B.greenBright,marginBottom:2}}>{b.stat}</div>
-                  <div style={{fontSize:9,color:B.gray,lineHeight:1.4}}>{b.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-        {/* RIGHT */}
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {/* Metrics */}
-          <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px"}}>
-            <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Impact Summary</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {play.metrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]}/>)}
-            </div>
+        {/* RIGHT: results */}
+        <div>
+          <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Results — {cat.label}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {play.metrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]}/>)}
           </div>
-          {/* Benefit vs Cost */}
-          <div style={{background:B.white,border:"1px solid #E8E8E8",borderRadius:4,padding:"16px 18px"}}>
-            <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Benefit vs. Investment</div>
-            {[{label:"Total Annual Benefit",value:results.totalBenefit,color:B.green},{label:"Annual Augment Cost",value:vals.augmentCost||180000,color:B.gray}].map(bar=>(
-              <div key={bar.label} style={{marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                  <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase",letterSpacing:"0.04em"}}>{bar.label}</span>
-                  <span style={{fontSize:11,fontWeight:700,color:B.black}}>${Math.round(bar.value).toLocaleString()}</span>
-                </div>
-                <div style={{height:5,background:B.offWhite,borderRadius:2,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${Math.min(100,(bar.value/Math.max(results.totalBenefit,vals.augmentCost||180000))*100)}%`,background:bar.color,borderRadius:2,transition:"width 0.35s ease"}}/>
-                </div>
-              </div>
-            ))}
-            <div style={{marginTop:8,padding:"9px 12px",background:results.totalBenefit>(vals.augmentCost||180000)?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>(vals.augmentCost||180000)?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase",letterSpacing:"0.06em"}}>Net Annual Benefit</span>
-              <span style={{fontSize:16,fontWeight:700,color:results.totalBenefit>(vals.augmentCost||180000)?B.greenDark:B.red}}>${Math.round(results.totalBenefit-(vals.augmentCost||180000)).toLocaleString()}</span>
-            </div>
-          </div>
-          {/* Exec summary */}
-          <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
-            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Executive Summary</div>
-            <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9}}>
-              Using the <span style={{color:B.greenBright,fontWeight:700}}>{currentCat.label}</span> lens at the <span style={{color:B.greenBright,fontWeight:700}}>{SL[scenarioIdx].toLowerCase()}</span> scenario ({Math.round(pct*100)}% {play.savingsLabel.toLowerCase()}), Augment delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(results.totalBenefit).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${(vals.augmentCost||180000).toLocaleString()}</span> investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(results.roi)}% ROI</span> with payback in <span style={{color:B.greenBright,fontWeight:700}}>{results.payback.toFixed(1)} months</span>. Recovering <span style={{color:B.white,fontWeight:700}}>{results.fteEquivalent.toFixed(1)} FTEs</span> of engineering capacity per year.
-            </p>
+          <div style={{marginTop:10,padding:"8px 10px",background:results.totalBenefit>(vals.augmentCost||180000)?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>(vals.augmentCost||180000)?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase"}}>Net Benefit</span>
+            <span style={{fontSize:14,fontWeight:700,color:results.totalBenefit>(vals.augmentCost||180000)?B.greenDark:B.red}}>${Math.round(results.totalBenefit-(vals.augmentCost||180000)).toLocaleString()}</span>
           </div>
         </div>
       </div>
-      {/* Success Thresholds */}
-      {play.successThresholds&&(
-        <div style={{padding:"0 32px 28px"}}>
-          <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"18px 20px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-              <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700}}>Pilot Success Thresholds</div>
-              <div style={{fontSize:9,color:B.gray}}>Drag each slider to your actual achieved result</div>
+    </div>
+  );
+}
+
+// ─── PLAY TAB (multi-category) ───
+
+function PlayTab({play,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange}){
+  // Compute results for each enabled category
+  const catResults=enabledCats.map(catId=>{
+    const cat=play.evalCategories.find(c=>c.id===catId);
+    const vals=catValues[catId]||{};
+    const si=catScenarios[catId]??1;
+    const pct=play.savingsRange[si];
+    const results=play.compute(vals,pct,catId);
+    return {cat,catId,vals,scenarioIdx:si,pct,results};
+  });
+  // Combined totals across all enabled categories
+  const combinedBenefit=catResults.reduce((s,r)=>s+r.results.totalBenefit,0);
+  const combinedCost=Math.max(...catResults.map(r=>r.vals.augmentCost||180000),0); // Use max (shared cost)
+  const combinedROI=combinedCost>0?((combinedBenefit-combinedCost)/combinedCost)*100:0;
+  const combinedHours=catResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
+  const combinedFTE=combinedHours/2080;
+  const roiMultiple=combinedCost>0?(combinedBenefit/combinedCost).toFixed(1):"0";
+  // Threshold results
+  const thresholdResults=play.successThresholds
+    ?play.successThresholds.map(t=>({...t,value:thresholds[t.key]??0,met:(thresholds[t.key]??0)>=t.target}))
+    :[];
+  const metCount=thresholdResults.filter(t=>t.met).length;
+  // Available categories not yet enabled
+  const availableCats=play.evalCategories.filter(c=>!enabledCats.includes(c.id));
+
+  return(
+    <div>
+      {/* Play header */}
+      <div style={{background:B.black,padding:"20px 32px 18px",borderBottom:`4px solid ${B.green}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:14}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>AUTOMATION PLAY {play.number} · {enabledCats.length} CATEGOR{enabledCats.length===1?"Y":"IES"} ACTIVE</div>
+            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4,lineHeight:1.2}}>{play.label}</h2>
+            <p style={{fontSize:11,color:B.greenLight,fontWeight:500,marginBottom:5}}>{play.tagline}</p>
+            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>{play.description}</p>
+          </div>
+          <div style={{display:"flex",gap:8,flexShrink:0}}>
+            {play.successThresholds&&(
+              <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:4,padding:"10px 14px",textAlign:"center"}}>
+                <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Pilot Success</div>
+                <div style={{fontSize:20,fontWeight:700,color:metCount===thresholdResults.length?B.greenBright:B.amber,lineHeight:1}}>{metCount}/{thresholdResults.length}</div>
+              </div>
+            )}
+            <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:4,padding:"10px 14px",textAlign:"center"}}>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Combined Benefit</div>
+              <div style={{fontSize:16,fontWeight:700,color:B.greenBright,lineHeight:1}}>${Math.round(combinedBenefit).toLocaleString()}</div>
             </div>
-            <p style={{fontSize:10,color:B.gray,marginBottom:14,lineHeight:1.6}}>Track actual pilot outcomes against success targets. The marker on each bar shows the minimum threshold — slide to your achieved result to see pass/fail status.</p>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{background:B.green,borderRadius:4,padding:"10px 16px",textAlign:"center"}}>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>Combined ROI</div>
+              <div style={{fontSize:26,fontWeight:700,color:B.white,lineHeight:1}}>{roiMultiple}×</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:2}}>{enabledCats.length} cat{enabledCats.length>1?"s":""}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Category selector bar */}
+      <div style={{padding:"12px 32px",background:B.offWhite,borderBottom:"1px solid #E8E8E8",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:9,color:B.green,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginRight:4}}>Active Categories:</span>
+        {enabledCats.map(catId=>{
+          const cat=play.evalCategories.find(c=>c.id===catId);
+          return cat?(
+            <span key={catId} style={{display:"inline-flex",alignItems:"center",gap:4,background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:3,padding:"4px 10px",fontSize:9,fontWeight:600,color:B.greenDark}}>
+              {cat.label}
+              {enabledCats.length>1&&<button onClick={()=>onToggleCat(catId)} style={{background:"none",border:"none",cursor:"pointer",color:B.red,fontSize:10,fontWeight:700,marginLeft:2,padding:0}}>×</button>}
+            </span>
+          ):null;
+        })}
+        {availableCats.length>0&&(
+          <div style={{position:"relative",display:"inline-block"}}>
+            <select
+              onChange={e=>{if(e.target.value)onToggleCat(e.target.value);e.target.value="";}}
+              value=""
+              style={{background:B.white,border:`1px dashed ${B.green}`,borderRadius:3,padding:"4px 8px",fontSize:9,fontWeight:600,color:B.green,cursor:"pointer",appearance:"auto"}}>
+              <option value="">+ Add Category</option>
+              {availableCats.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Category panels */}
+      <div style={{padding:"16px 32px"}}>
+        {catResults.map(({cat,catId,vals,scenarioIdx})=>(
+          <CategoryPanel
+            key={catId}
+            play={play}
+            cat={cat}
+            vals={vals}
+            onChange={(key,val)=>onValueChange(catId,key,val)}
+            scenarioIdx={scenarioIdx}
+            setScenarioIdx={idx=>onScenarioChange(catId,idx)}
+            onRemove={()=>onToggleCat(catId)}
+            isOnly={enabledCats.length===1}
+          />
+        ))}
+        {/* Combined Play Summary (when multiple categories) */}
+        {enabledCats.length>1&&(
+          <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
+            <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Combined Play Summary ({enabledCats.length} categories)</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+              {[
+                {label:"Combined Annual Benefit",value:"$"+Math.round(combinedBenefit).toLocaleString(),hl:true},
+                {label:"Combined ROI",value:Math.round(combinedROI)+"%",hl:true},
+                {label:"Hours Recovered",value:Math.round(combinedHours).toLocaleString()+" hrs"},
+                {label:"FTE Equivalent",value:combinedFTE.toFixed(1)+" FTEs"},
+              ].map(s=>(
+                <div key={s.label} style={{background:s.hl?B.greenBg:B.cardBg,border:s.hl?`2px solid ${B.green}`:"1px solid #E8E8E8",borderRadius:4,padding:"10px 12px",textAlign:"center"}}>
+                  <div style={{fontSize:8,color:s.hl?B.green:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:700,marginBottom:3}}>{s.label}</div>
+                  <div style={{fontSize:s.hl?18:14,fontWeight:700,color:s.hl?B.greenDark:B.black}}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+            {/* Per-category breakdown */}
+            <div style={{marginTop:12}}>
+              {catResults.map(r=>{
+                const share=combinedBenefit>0?(r.results.totalBenefit/combinedBenefit)*100:0;
+                return(
+                  <div key={r.catId} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                    <span style={{fontSize:9,fontWeight:600,color:B.darkGray,minWidth:140}}>{r.cat.label}</span>
+                    <div style={{flex:1,height:5,background:B.offWhite,borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:share+"%",background:B.green,borderRadius:3}}/>
+                    </div>
+                    <span style={{fontSize:9,fontWeight:700,color:B.black,minWidth:80,textAlign:"right"}}>${Math.round(r.results.totalBenefit).toLocaleString()} ({share.toFixed(0)}%)</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Benchmarks */}
+        <div style={{background:B.black,borderRadius:4,padding:"14px 16px",marginBottom:14}}>
+          <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Validated Pilot Outcomes</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+            {play.benchmarks.map((b,i)=>(
+              <div key={i} style={{background:"rgba(255,255,255,0.04)",borderLeft:`2px solid ${B.green}`,borderRadius:2,padding:"7px 9px"}}>
+                <div style={{fontSize:13,fontWeight:700,color:B.greenBright,marginBottom:1}}>{b.stat}</div>
+                <div style={{fontSize:9,color:B.gray,lineHeight:1.4}}>{b.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Executive Summary */}
+        <div style={{background:B.black,borderRadius:4,padding:"14px 16px",marginBottom:14}}>
+          <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Executive Summary</div>
+          <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9}}>
+            Across <span style={{color:B.greenBright,fontWeight:700}}>{enabledCats.length} evaluation categor{enabledCats.length===1?"y":"ies"}</span> ({catResults.map(r=>r.cat.label).join(", ")}), this play delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(combinedBenefit).toLocaleString()}</span> in combined annual benefit, recovering <span style={{color:B.white,fontWeight:700}}>{combinedFTE.toFixed(1)} FTEs</span> of engineering capacity — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(combinedROI)}% ROI</span> against a <span style={{color:B.white,fontWeight:700}}>${(combinedCost).toLocaleString()}</span> investment.
+          </p>
+        </div>
+        {/* Success Thresholds */}
+        {play.successThresholds&&(
+          <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Pilot Success Thresholds</div>
+              <div style={{fontSize:9,color:B.gray}}>Drag sliders to your achieved results</div>
+            </div>
+            <p style={{fontSize:10,color:B.gray,marginBottom:12,lineHeight:1.5}}>Track actual pilot outcomes against success targets.</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {thresholdResults.map(t=>(
                 <ThresholdMeter key={t.key} threshold={t} value={thresholds[t.key]??0}
                   onChange={(key,val)=>onThresholdChange(play.id,key,val)}/>
               ))}
             </div>
-            <div style={{marginTop:12,padding:"10px 14px",background:metCount===thresholdResults.length?B.greenBg:B.amberBg,border:`1px solid ${metCount===thresholdResults.length?B.green:B.amber}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:10,color:B.darkGray}}>Pilot success score</span>
-              <span style={{fontSize:14,fontWeight:700,color:metCount===thresholdResults.length?B.greenDark:B.amber}}>{metCount} of {thresholdResults.length} thresholds met {metCount===thresholdResults.length?"✓":"— in progress"}</span>
+            <div style={{marginTop:10,padding:"8px 12px",background:metCount===thresholdResults.length?B.greenBg:B.amberBg,border:`1px solid ${metCount===thresholdResults.length?B.green:B.amber}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:9,color:B.darkGray}}>Pilot success score</span>
+              <span style={{fontSize:13,fontWeight:700,color:metCount===thresholdResults.length?B.greenDark:B.amber}}>{metCount} of {thresholdResults.length} thresholds met {metCount===thresholdResults.length?"✓":"— in progress"}</span>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
-
-// ─── DISABLED TAB ─────────────────────────────────────────────────────────────
 
 function DisabledTab({play,onEnable}){
   return(
@@ -630,128 +664,134 @@ function DisabledTab({play,onEnable}){
   );
 }
 
-// ─── SUMMARY TAB ─────────────────────────────────────────────────────────────
+// ─── SUMMARY TAB (per-category breakdown) ───
 
-function SummaryTab({allResults,customerName}){
-  if(allResults.length===0) return(
+function SummaryTab({allCatResults,customerName}){
+  if(allCatResults.length===0) return(
     <div style={{padding:"60px 32px",textAlign:"center"}}>
       <div style={{fontSize:14,color:B.gray,marginBottom:8}}>No plays are currently included.</div>
       <div style={{fontSize:11,color:B.gray}}>Enable at least one play tab to see the summary.</div>
     </div>
   );
-  const grandTotal=allResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const grandCost=allResults.reduce((s,r)=>s+r.augmentCost,0);
+  // Use max augmentCost per play (shared cost, not summed per category)
+  const playMap={};
+  allCatResults.forEach(r=>{
+    if(!playMap[r.play.id]) playMap[r.play.id]={play:r.play,cats:[],maxCost:0};
+    playMap[r.play.id].cats.push(r);
+    playMap[r.play.id].maxCost=Math.max(playMap[r.play.id].maxCost,r.augmentCost);
+  });
+  const grandTotal=allCatResults.reduce((s,r)=>s+r.results.totalBenefit,0);
+  const grandCost=Object.values(playMap).reduce((s,p)=>s+p.maxCost,0);
   const grandNet=grandTotal-grandCost;
-  const grandROI=((grandTotal-grandCost)/grandCost)*100;
-  const grandPayback=grandCost/(grandTotal/12);
-  const grandFTE=allResults.reduce((s,r)=>s+(r.results.fteEquivalent||0),0);
-  const grandHours=allResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
+  const grandROI=grandCost>0?((grandTotal-grandCost)/grandCost)*100:0;
+  const grandPayback=grandCost>0?grandCost/(grandTotal/12):0;
+  const grandFTE=allCatResults.reduce((s,r)=>s+(r.results.fteEquivalent||0),0);
+  const grandHours=allCatResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
+  const playCount=Object.keys(playMap).length;
+
   return(
     <div>
-      <div style={{background:B.black,padding:"22px 32px 20px",borderBottom:`4px solid ${B.green}`}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:16}}>
+      <div style={{background:B.black,padding:"20px 32px 18px",borderBottom:`4px solid ${B.green}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:14}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:5}}>COMBINED ROI SUMMARY</div>
-            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:5}}>{customerName?customerName+" × Augment Code":"Full Platform ROI Summary"}</h2>
-            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>Consolidated view across {allResults.length} active automation play{allResults.length>1?"s":""}. Each play contributes independently.</p>
+            <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.14em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>COMBINED ROI SUMMARY</div>
+            <h2 style={{fontSize:20,fontWeight:700,color:B.white,marginBottom:4}}>{customerName?customerName+" × Augment Code":"Full Platform ROI Summary"}</h2>
+            <p style={{fontSize:10,color:B.gray,lineHeight:1.7,maxWidth:560}}>Consolidated view across {playCount} play{playCount>1?"s":""}, {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}.</p>
           </div>
-          <div style={{display:"flex",gap:10}}>
-            {[{label:"Total Annual Benefit",value:"$"+Math.round(grandTotal).toLocaleString()},{label:"Combined ROI",value:Math.round(grandROI)+"%"},{label:"Payback Period",value:grandPayback.toFixed(1)+" mo"}].map(s=>(
-              <div key={s.label} style={{background:B.green,borderRadius:4,padding:"10px 16px",textAlign:"center",minWidth:90}}>
-                <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>{s.label}</div>
-                <div style={{fontSize:s.value.length>8?16:20,fontWeight:700,color:B.white,lineHeight:1}}>{s.value}</div>
+          <div style={{display:"flex",gap:8}}>
+            {[{label:"Total Benefit",value:"$"+Math.round(grandTotal).toLocaleString()},{label:"Combined ROI",value:Math.round(grandROI)+"%"},{label:"Payback",value:grandPayback.toFixed(1)+" mo"}].map(s=>(
+              <div key={s.label} style={{background:B.green,borderRadius:4,padding:"10px 14px",textAlign:"center",minWidth:80}}>
+                <div style={{fontSize:9,color:"rgba(255,255,255,0.65)",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>{s.label}</div>
+                <div style={{fontSize:s.value.length>8?14:18,fontWeight:700,color:B.white,lineHeight:1}}>{s.value}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div style={{padding:"20px 32px"}}>
-        {/* Table */}
-        <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"18px 20px",marginBottom:18}}>
-          <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Per-Play Breakdown</div>
+      <div style={{padding:"18px 32px"}}>
+        {/* Per-category breakdown table */}
+        <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:16}}>
+          <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Per-Category Breakdown</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead>
               <tr style={{borderBottom:`2px solid ${B.green}`}}>
-                {["Play","Category","Scenario","Total Benefit","Cost","Net Benefit","ROI","FTEs","Payback"].map(h=>(
-                  <th key={h} style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:700,padding:"0 8px 8px 0",textAlign:"left"}}>{h}</th>
+                {["Play","Category","Scenario","Total Benefit","ROI","FTEs","Payback"].map(h=>(
+                  <th key={h} style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:700,padding:"0 6px 6px 0",textAlign:"left"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {allResults.map((r,i)=>(
-                <tr key={r.play.id} style={{borderBottom:"1px solid #F0F0F0",background:i%2===0?B.white:B.cardBg}}>
-                  <td style={{padding:"10px 8px 10px 0",fontWeight:700,fontSize:11,color:B.black}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:17,height:17,borderRadius:2,background:B.green,fontSize:7,fontWeight:700,color:B.white,flexShrink:0}}>{r.play.number}</span>
+              {allCatResults.map((r,i)=>(
+                <tr key={r.play.id+"-"+r.catId} style={{borderBottom:"1px solid #F0F0F0",background:i%2===0?B.white:B.cardBg}}>
+                  <td style={{padding:"8px 6px 8px 0",fontWeight:700,fontSize:10,color:B.black}}>
+                    <div style={{display:"flex",alignItems:"center",gap:4}}>
+                      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:2,background:B.green,fontSize:7,fontWeight:700,color:B.white,flexShrink:0}}>{r.play.number}</span>
                       {r.play.label}
                     </div>
                   </td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:9,color:B.gray}}>{r.categoryLabel}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:9,color:B.gray}}>{SL[r.scenarioIdx]}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>${Math.round(r.results.totalBenefit).toLocaleString()}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>${Math.round(r.augmentCost).toLocaleString()}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:r.results.totalBenefit>r.augmentCost?B.greenDark:B.red}}>${Math.round(r.results.totalBenefit-r.augmentCost).toLocaleString()}</td>
-                  <td style={{padding:"10px 8px 10px 0"}}><span style={{fontSize:11,fontWeight:700,color:B.green,background:B.greenBg,padding:"2px 7px",borderRadius:3}}>{Math.round(r.results.roi)}%</span></td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>{(r.results.fteEquivalent||0).toFixed(1)}</td>
-                  <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>{r.results.payback.toFixed(1)} mo</td>
+                  <td style={{padding:"8px 6px 8px 0",fontSize:9,color:B.gray}}>{r.categoryLabel}</td>
+                  <td style={{padding:"8px 6px 8px 0",fontSize:9,color:B.gray}}>{SL[r.scenarioIdx]}</td>
+                  <td style={{padding:"8px 6px 8px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>${Math.round(r.results.totalBenefit).toLocaleString()}</td>
+                  <td style={{padding:"8px 6px 8px 0"}}><span style={{fontSize:10,fontWeight:700,color:B.green,background:B.greenBg,padding:"2px 6px",borderRadius:3}}>{Math.round(r.results.roi)}%</span></td>
+                  <td style={{padding:"8px 6px 8px 0",fontSize:10,color:B.darkGray}}>{(r.results.fteEquivalent||0).toFixed(1)}</td>
+                  <td style={{padding:"8px 6px 8px 0",fontSize:10,color:B.darkGray}}>{r.results.payback.toFixed(1)} mo</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr style={{borderTop:`2px solid ${B.green}`,background:B.greenBg}}>
-                <td colSpan={3} style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>TOTAL ({allResults.length} plays)</td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:13,fontWeight:700,color:B.greenDark}}>${Math.round(grandTotal).toLocaleString()}</td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:11,color:B.darkGray}}>${Math.round(grandCost).toLocaleString()}</td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:13,fontWeight:700,color:B.greenDark}}>${Math.round(grandNet).toLocaleString()}</td>
-                <td style={{padding:"10px 8px 10px 0"}}><span style={{fontSize:13,fontWeight:700,color:B.white,background:B.green,padding:"3px 9px",borderRadius:3}}>{Math.round(grandROI)}%</span></td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>{grandFTE.toFixed(1)}</td>
-                <td style={{padding:"10px 8px 10px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>{grandPayback.toFixed(1)} mo</td>
+                <td colSpan={3} style={{padding:"8px 6px 8px 0",fontSize:11,fontWeight:700,color:B.greenDark}}>TOTAL ({playCount} plays, {allCatResults.length} categories)</td>
+                <td style={{padding:"8px 6px 8px 0",fontSize:12,fontWeight:700,color:B.greenDark}}>${Math.round(grandTotal).toLocaleString()}</td>
+                <td style={{padding:"8px 6px 8px 0"}}><span style={{fontSize:12,fontWeight:700,color:B.white,background:B.green,padding:"2px 7px",borderRadius:3}}>{Math.round(grandROI)}%</span></td>
+                <td style={{padding:"8px 6px 8px 0",fontSize:10,fontWeight:700,color:B.greenDark}}>{grandFTE.toFixed(1)}</td>
+                <td style={{padding:"8px 6px 8px 0",fontSize:10,fontWeight:700,color:B.greenDark}}>{grandPayback.toFixed(1)} mo</td>
               </tr>
             </tfoot>
           </table>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
           {/* Distribution */}
-          <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px"}}>
-            <div style={{fontSize:9,color:B.green,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Benefit Distribution by Play</div>
-            {allResults.map(r=>{
+          <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"14px 16px"}}>
+            <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Benefit Distribution</div>
+            {allCatResults.map(r=>{
               const share=grandTotal>0?(r.results.totalBenefit/grandTotal)*100:0;
               return(
-                <div key={r.play.id} style={{marginBottom:12}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontSize:10,color:B.darkGray,fontWeight:600}}>{r.play.label}</span>
-                    <span style={{fontSize:10,fontWeight:700,color:B.black}}>${Math.round(r.results.totalBenefit).toLocaleString()} <span style={{color:B.gray,fontWeight:400,fontSize:9}}>({share.toFixed(0)}%)</span></span>
+                <div key={r.play.id+"-"+r.catId} style={{marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                    <span style={{fontSize:9,color:B.darkGray,fontWeight:600}}>{r.play.label} — {r.categoryLabel}</span>
+                    <span style={{fontSize:9,fontWeight:700,color:B.black}}>${Math.round(r.results.totalBenefit).toLocaleString()} ({share.toFixed(0)}%)</span>
                   </div>
-                  <div style={{height:5,background:B.offWhite,borderRadius:3,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:share+"%",background:B.green,borderRadius:3,transition:"width 0.5s ease"}}/>
+                  <div style={{height:4,background:B.offWhite,borderRadius:3,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:share+"%",background:B.green,borderRadius:3}}/>
                   </div>
                 </div>
               );
             })}
           </div>
           {/* KPIs */}
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {[
-              {label:"Total Annual Benefit",value:"$"+Math.round(grandTotal).toLocaleString(),sub:"across active plays"},
+              {label:"Total Annual Benefit",value:"$"+Math.round(grandTotal).toLocaleString(),sub:"across all categories"},
               {label:"Engineering Hours Recovered",value:Math.round(grandHours).toLocaleString()+" hrs",sub:"per year"},
               {label:"FTE Capacity Recovered",value:grandFTE.toFixed(1)+" FTEs",sub:"equivalent headcount"},
               {label:"Net Annual Return",value:"$"+Math.round(grandNet).toLocaleString(),sub:"benefit minus platform cost"},
             ].map(s=>(
-              <div key={s.label} style={{background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div key={s.label} style={{background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"9px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
-                  <div style={{fontSize:9,color:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>{s.label}</div>
+                  <div style={{fontSize:9,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:500}}>{s.label}</div>
                   <div style={{fontSize:9,color:B.gray,marginTop:1}}>{s.sub}</div>
                 </div>
-                <div style={{fontSize:16,fontWeight:700,color:B.greenDark}}>{s.value}</div>
+                <div style={{fontSize:15,fontWeight:700,color:B.greenDark}}>{s.value}</div>
               </div>
             ))}
           </div>
         </div>
+
         {/* Exec narrative */}
-        <div style={{background:B.black,borderRadius:4,padding:"16px 18px"}}>
-          <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Combined Executive Narrative</div>
+        <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
+          <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {allResults.length} active Augment Code automation play{allResults.length>1?"s":""} ({allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> platform investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering the equivalent of <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
+            Across {playCount} active Augment Code play{playCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
           </p>
         </div>
       </div>
@@ -759,170 +799,123 @@ function SummaryTab({allResults,customerName}){
   );
 }
 
-// ─── PDF EXPORT ───────────────────────────────────────────────────────────────
-
-function exportToPDF(allResults,customerName){
-  const w=window.open("","_blank");
-  if(!w){alert("Please allow popups to export PDF.");return;}
-  const grandTotal=allResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const grandCost=allResults.reduce((s,r)=>s+r.augmentCost,0);
-  const grandROI=((grandTotal-grandCost)/grandCost)*100;
-  const grandPayback=grandCost/(grandTotal/12);
-  const grandFTE=allResults.reduce((s,r)=>s+(r.results.fteEquivalent||0),0);
-  const today=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
-
-  const thresholdHTML=(r)=>{
-    if(!r.play.successThresholds||!r.thresholds) return "";
-    const items=r.play.successThresholds.map(t=>{
-      const val=r.thresholds[t.key]??0;
-      const met=val>=t.target;
-      const color=met?"#158158":val>=(t.target*0.75)?"#D4A017":"#D94F4F";
-      return `<div style="background:${met?"#EBF5F0":"#FFFBEB"};border-left:3px solid ${color};border-radius:3px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:9px;font-weight:700;color:#0D0D0D">${t.label}</div><div style="font-size:8px;color:#888;margin-top:1px">${t.desc}</div></div>
-        <div style="text-align:right;flex-shrink:0;margin-left:12px"><div style="font-size:11px;font-weight:700;color:${color}">${val}${t.unit}</div><div style="font-size:8px;color:${color}">${met?"✓ Met":"Target: "+t.target+t.unit}</div></div>
-      </div>`;
-    }).join("");
-    return `<div style="margin-top:14px"><div style="font-size:8px;color:#158158;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:8px">Pilot Success Thresholds</div>${items}</div>`;
-  };
-
-  const playPage=(r)=>`
-  <div class="page">
-    <div class="ph"><div><div class="ey">AUTOMATION PLAY ${r.play.number} · ${r.categoryLabel}</div><div class="pt">${r.play.label}</div><div style="font-size:10px;color:#1AAA6E;font-weight:500;margin-top:3px">${r.play.tagline}</div></div>
-    <div style="background:#158158;border-radius:4px;padding:10px 18px;text-align:center;flex-shrink:0"><div style="font-size:8px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">ROI Multiple</div><div style="font-size:26px;font-weight:700;color:#fff;line-height:1">${(r.results.totalBenefit/r.augmentCost).toFixed(1)}×</div><div style="font-size:8px;color:rgba(255,255,255,0.6);margin-top:2px">${SL[r.scenarioIdx]}</div></div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
-      <div>
-        <div class="sl">Impact Summary</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-          ${r.play.metrics.map(m=>{const f=fmt(r.results[m.key],m.format);return m.highlight?`<div style="background:#EBF5F0;border:2px solid #158158;border-radius:3px;padding:10px 12px"><div style="font-size:7px;color:#158158;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">${m.label}</div><div style="font-size:20px;font-weight:700;color:#0D6B48">${f}</div></div>`:`<div style="background:#F8F8F8;border:1px solid #E8E8E8;border-left:3px solid #158158;border-radius:3px;padding:9px 11px"><div style="font-size:7px;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">${m.label}</div><div style="font-size:15px;font-weight:700;color:#0D0D0D">${f}</div></div>`;}).join("")}
-        </div>
-        <div class="sl">Benefit vs. Investment</div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;margin-bottom:3px"><span>Total Annual Benefit</span><span style="font-weight:700">$${Math.round(r.results.totalBenefit).toLocaleString()}</span></div>
-        <div style="height:5px;background:#F5F5F5;border-radius:2px;overflow:hidden;margin-bottom:6px"><div style="height:100%;width:100%;background:#158158;border-radius:2px"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;margin-bottom:3px"><span>Annual Augment Cost</span><span style="font-weight:700">$${Math.round(r.augmentCost).toLocaleString()}</span></div>
-        <div style="height:5px;background:#F5F5F5;border-radius:2px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${Math.round((r.augmentCost/r.results.totalBenefit)*100)}%;background:#888;border-radius:2px"></div></div>
-        <div style="background:#EBF5F0;border:1px solid #158158;border-radius:3px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:9px;color:#444;text-transform:uppercase;letter-spacing:0.05em">Net Annual Benefit</span><span style="font-size:14px;font-weight:700;color:#0D6B48">$${Math.round(r.results.totalBenefit-r.augmentCost).toLocaleString()}</span></div>
-        ${thresholdHTML(r)}
-      </div>
-      <div>
-        <div class="sl">Validated Pilot Outcomes</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
-          ${r.play.benchmarks.map(b=>`<div style="background:#0D0D0D;border-left:2px solid #158158;border-radius:2px;padding:7px 9px"><div style="font-size:13px;font-weight:700;color:#22C97A;margin-bottom:2px">${b.stat}</div><div style="font-size:8px;color:#888;line-height:1.4">${b.label}</div></div>`).join("")}
-        </div>
-        <div style="background:#0D0D0D;border-radius:3px;padding:12px 14px">
-          <div style="font-size:8px;color:#22C97A;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:7px">Executive Summary</div>
-          <p style="font-size:9px;color:#CCCCCC;line-height:1.9">Using the <strong style="color:#fff">${r.categoryLabel}</strong> lens at the <strong style="color:#22C97A">${SL[r.scenarioIdx].toLowerCase()}</strong> scenario, Augment delivers <strong style="color:#fff">$${Math.round(r.results.totalBenefit).toLocaleString()}</strong> in annual benefit against a <strong style="color:#fff">$${Math.round(r.augmentCost).toLocaleString()}</strong> investment — a <strong style="color:#22C97A">${Math.round(r.results.roi)}% ROI</strong> with payback in <strong style="color:#22C97A">${r.results.payback.toFixed(1)} months</strong>. Equivalent to recovering <strong style="color:#fff">${(r.results.fteEquivalent||0).toFixed(1)} FTEs</strong> of engineering capacity per year.</p>
-        </div>
-      </div>
-    </div>
-    <div class="pf">PRIVILEGED &amp; CONFIDENTIAL · augment code · ${today}</div>
-  </div>`;
-
-  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Augment Code ROI — ${customerName||"Customer"}</title>
-  <style>
-  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Roboto Mono',monospace;background:#fff;color:#0D0D0D;font-size:11px}
-  .page{width:100%;min-height:100vh;padding:32px 36px 20px;page-break-after:always;display:flex;flex-direction:column;gap:16px}
-  .tp{background:#0D0D0D;color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:100vh;padding:56px 56px 36px;page-break-after:always}
-  .ph{background:#0D0D0D;color:#fff;padding:18px 20px 16px;border-bottom:4px solid #158158;border-radius:4px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px}
-  .ey{font-size:8px;color:#22C97A;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
-  .pt{font-size:18px;font-weight:700;color:#fff}
-  .sl{font-size:8px;color:#158158;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;margin-bottom:8px}
-  .pf{font-size:8px;color:#888;text-align:right;margin-top:auto;padding-top:12px;border-top:1px solid #E8E8E8}
-  table{width:100%;border-collapse:collapse;font-size:9px}
-  th{font-size:7px;color:#158158;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;padding:0 7px 7px 0;text-align:left;border-bottom:2px solid #158158}
-  td{padding:8px 7px 8px 0;border-bottom:1px solid #F0F0F0}
-  .pbtn{position:fixed;bottom:20px;right:20px;background:#158158;color:#fff;border:none;border-radius:4px;padding:11px 18px;font-family:'Roboto Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;z-index:9999}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page,.tp{page-break-after:always}.pbtn{display:none}}
-  </style></head><body>
-  <button class="pbtn" onclick="window.print()">⬇ Save as PDF</button>
-  <div class="tp">
-    <div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:40px"><div style="width:36px;height:36px;background:#158158;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff">A</div><span style="font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase">augment code</span></div>
-      <div style="width:56px;height:4px;background:#158158;margin-bottom:36px"></div>
-      <div style="font-size:32px;font-weight:700;line-height:1.2;margin-bottom:10px">ROI Business Case</div>
-      <div style="font-size:13px;color:#888;margin-bottom:5px">Prepared for</div>
-      <div style="font-size:18px;color:#22C97A;font-weight:500;margin-bottom:36px">${customerName||"Your Company"}</div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap">
-        ${[{l:"Total Annual Benefit",v:"$"+Math.round(grandTotal).toLocaleString()},{l:"Combined ROI",v:Math.round(grandROI)+"%"},{l:"Payback Period",v:grandPayback.toFixed(1)+" months"},{l:"FTEs Recovered",v:grandFTE.toFixed(1)+" FTEs"}].map(s=>`<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-top:3px solid #158158;border-radius:4px;padding:14px 18px"><div style="font-size:22px;font-weight:700;color:#22C97A;margin-bottom:4px">${s.v}</div><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.08em">${s.l}</div></div>`).join("")}
-      </div>
-    </div>
-    <div style="font-size:9px;color:#444"><div>PRIVILEGED &amp; CONFIDENTIAL</div><div style="margin-top:4px">${today}</div></div>
-  </div>
-  <div class="page">
-    <div class="ph"><div><div class="ey">COMBINED ROI SUMMARY</div><div class="pt">${customerName?customerName+" × Augment Code":"Full Platform Summary"}</div></div>
-    <div style="display:flex;gap:8px">${[{l:"Total Benefit",v:"$"+Math.round(grandTotal).toLocaleString()},{l:"Combined ROI",v:Math.round(grandROI)+"%"},{l:"Payback",v:grandPayback.toFixed(1)+" mo"}].map(s=>`<div style="background:#158158;border-radius:3px;padding:10px 14px;text-align:center"><div style="font-size:8px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px">${s.l}</div><div style="font-size:16px;font-weight:700;color:#fff">${s.v}</div></div>`).join("")}</div></div>
-    <div class="sl">Per-Play Breakdown</div>
-    <table><thead><tr>${["Play","Category","Scenario","Total Benefit","Cost","Net Benefit","ROI","FTEs","Payback"].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
-    <tbody>
-      ${allResults.map((r,i)=>`<tr style="background:${i%2===0?"#fff":"#F8F8F8"}"><td><strong>${r.play.label}</strong></td><td style="color:#888">${r.categoryLabel}</td><td style="color:#888">${SL[r.scenarioIdx]}</td><td style="color:#0D6B48;font-weight:700">$${Math.round(r.results.totalBenefit).toLocaleString()}</td><td>$${Math.round(r.augmentCost).toLocaleString()}</td><td style="color:#0D6B48;font-weight:700">$${Math.round(r.results.totalBenefit-r.augmentCost).toLocaleString()}</td><td><span style="background:#EBF5F0;color:#158158;font-weight:700;padding:2px 6px;border-radius:2px">${Math.round(r.results.roi)}%</span></td><td>${(r.results.fteEquivalent||0).toFixed(1)}</td><td>${r.results.payback.toFixed(1)} mo</td></tr>`).join("")}
-      <tr style="background:#EBF5F0;font-weight:700;border-top:2px solid #158158"><td colspan="3">TOTAL</td><td style="color:#0D6B48">$${Math.round(grandTotal).toLocaleString()}</td><td>$${Math.round(grandCost).toLocaleString()}</td><td style="color:#0D6B48">$${Math.round(grandTotal-grandCost).toLocaleString()}</td><td><span style="background:#158158;color:#fff;font-weight:700;padding:2px 7px;border-radius:2px">${Math.round(grandROI)}%</span></td><td>${grandFTE.toFixed(1)}</td><td>${grandPayback.toFixed(1)} mo</td></tr>
-    </tbody></table>
-    <div style="background:#0D0D0D;border-radius:4px;padding:14px 16px;margin-top:4px">
-      <div style="font-size:8px;color:#22C97A;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:7px">Combined Executive Narrative</div>
-      <p style="font-size:9px;color:#CCCCCC;line-height:1.9">Across ${allResults.length} active Augment Code automation plays (${allResults.map(r=>r.play.label).join(", ")}), the platform delivers a combined <strong style="color:#fff">$${Math.round(grandTotal).toLocaleString()}</strong> in annual benefit against a <strong style="color:#fff">$${Math.round(grandCost).toLocaleString()}</strong> investment — a <strong style="color:#22C97A">${Math.round(grandROI)}% combined ROI</strong> with a payback period of <strong style="color:#22C97A">${grandPayback.toFixed(1)} months</strong>, recovering the equivalent of <strong style="color:#fff">${grandFTE.toFixed(1)} FTEs</strong> of engineering capacity annually.</p>
-    </div>
-    <div class="pf">PRIVILEGED &amp; CONFIDENTIAL · augment code · ${today}</div>
-  </div>
-  ${allResults.map(playPage).join("")}
-  </body></html>`;
-  w.document.write(html);w.document.close();
-  setTimeout(()=>w.print(),800);
-}
-
-// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// ─── MAIN APP ───
 
 export default function App(){
   const [activeTab,setActiveTab]=useState("code-review");
   const [customerName,setCustomerName]=useState("");
   const [editingName,setEditingName]=useState(false);
   const [enabled,setEnabled]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
-  const [scenarios,setScenarios]=useState({"code-review":1,"unit-test":1,"build-failure":1,"interactive":1});
-  const [evalCats,setEvalCats]=useState({"code-review":"throughput","unit-test":"velocity","build-failure":"mttr","interactive":"productivity"});
+
+  // Multi-category: which categories are active per play
+  const [enabledCats,setEnabledCats]=useState({
+    "code-review":["throughput"],
+    "unit-test":["velocity"],
+    "build-failure":["mttr"],
+    "interactive":["productivity"],
+  });
+
+  // Per-category scenario indices: {playId: {catId: scenarioIdx}}
+  const [catScenarios,setCatScenarios]=useState(()=>{
+    const s={};
+    PLAYS.forEach(p=>{s[p.id]={};p.evalCategories.forEach(c=>{s[p.id][c.id]=1;});});
+    return s;
+  });
+
+  // Per-category input values: {playId: {catId: {key: val}}}
+  const [catValues,setCatValues]=useState(()=>{
+    const init={};
+    PLAYS.forEach(p=>{
+      init[p.id]={};
+      p.evalCategories.forEach(cat=>{
+        init[p.id][cat.id]={};
+        cat.inputs.forEach(inp=>{init[p.id][cat.id][inp.key]=inp.default;});
+      });
+    });
+    return init;
+  });
+
   const [thresholds,setThresholds]=useState(()=>{
     const t={};
     PLAYS.forEach(p=>{if(p.successThresholds){t[p.id]={};p.successThresholds.forEach(s=>{t[p.id][s.key]=0;});}});
     return t;
   });
-  const [values,setValues]=useState(()=>{
-    const init={};
-    PLAYS.forEach(p=>{
-      init[p.id]={};
-      p.evalCategories.forEach(cat=>{cat.inputs.forEach(inp=>{if(!(inp.key in init[p.id]))init[p.id][inp.key]=inp.default;});});
-    });
-    return init;
-  });
-  const handleChange=useCallback((playId,key,val)=>{
-    setValues(prev=>({...prev,[playId]:{...prev[playId],[key]:val}}));
+
+  const handleValueChange=useCallback((playId,catId,key,val)=>{
+    setCatValues(prev=>({
+      ...prev,
+      [playId]:{...prev[playId],[catId]:{...prev[playId]?.[catId],[key]:val}}
+    }));
   },[]);
+
+  const handleScenarioChange=useCallback((playId,catId,idx)=>{
+    setCatScenarios(prev=>({
+      ...prev,
+      [playId]:{...prev[playId],[catId]:idx}
+    }));
+  },[]);
+
+  const handleToggleCat=useCallback((playId,catId)=>{
+    setEnabledCats(prev=>{
+      const current=prev[playId]||[];
+      if(current.includes(catId)){
+        // Remove (but keep at least one)
+        if(current.length<=1) return prev;
+        return {...prev,[playId]:current.filter(c=>c!==catId)};
+      } else {
+        // Add
+        return {...prev,[playId]:[...current,catId]};
+      }
+    });
+  },[]);
+
   const handleThresholdChange=useCallback((playId,key,val)=>{
     setThresholds(prev=>({...prev,[playId]:{...prev[playId],[key]:val}}));
   },[]);
-  const allResults=PLAYS.filter(p=>enabled[p.id]).map(play=>{
-    const si=scenarios[play.id];
-    const catId=evalCats[play.id];
-    const pct=play.savingsRange[si];
-    const vals=values[play.id];
-    const cat=play.evalCategories.find(c=>c.id===catId)||play.evalCategories[0];
-    return{play,scenarioIdx:si,results:play.compute(vals,pct,catId),augmentCost:vals.augmentCost||180000,categoryLabel:cat.label,thresholds:thresholds[play.id]||{}};
+
+  // Build allCatResults: one entry per enabled category per enabled play
+  const allCatResults=[];
+  PLAYS.filter(p=>enabled[p.id]).forEach(play=>{
+    const cats=enabledCats[play.id]||[];
+    cats.forEach(catId=>{
+      const cat=play.evalCategories.find(c=>c.id===catId);
+      if(!cat) return;
+      const vals=catValues[play.id]?.[catId]||{};
+      const si=catScenarios[play.id]?.[catId]??1;
+      const pct=play.savingsRange[si];
+      const results=play.compute(vals,pct,catId);
+      allCatResults.push({
+        play,catId,cat,
+        categoryLabel:cat.label,
+        scenarioIdx:si,
+        results,
+        augmentCost:vals.augmentCost||180000,
+        thresholds:thresholds[play.id]||{},
+      });
+    });
   });
+
   const activePlay=PLAYS.find(p=>p.id===activeTab);
+
   const tabLabel=(p)=>{
     const isEn=enabled[p.id];
+    const catCount=(enabledCats[p.id]||[]).length;
     return(
       <button key={p.id} onClick={()=>setActiveTab(p.id)} style={{
         background:"transparent",border:"none",
         borderBottom:activeTab===p.id?`3px solid ${B.green}`:"3px solid transparent",
-        padding:"12px 18px 9px",cursor:"pointer",
+        padding:"10px 14px 8px",cursor:"pointer",
         color:activeTab===p.id?B.green:isEn?B.gray:"#CCCCCC",
         fontWeight:activeTab===p.id?700:500,
         fontSize:10,letterSpacing:"0.06em",textTransform:"uppercase",
-        transition:"all 0.15s",display:"flex",alignItems:"center",gap:6,
+        transition:"all 0.15s",display:"flex",alignItems:"center",gap:5,
         textDecoration:isEn?"none":"line-through",opacity:isEn?1:0.5,
       }}>
-        <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:2,background:activeTab===p.id&&isEn?B.green:isEn?"transparent":"#E0E0E0",border:`1px solid ${activeTab===p.id&&isEn?B.green:isEn?B.gray:"#CCC"}`,fontSize:7,fontWeight:700,color:activeTab===p.id&&isEn?B.white:isEn?B.gray:"#AAA"}}>
+        <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:2,background:activeTab===p.id&&isEn?B.green:isEn?"transparent":"#E0E0E0",border:`1px solid ${activeTab===p.id&&isEn?B.green:isEn?B.gray:"#CCC"}`,fontSize:7,fontWeight:700,color:activeTab===p.id&&isEn?B.white:isEn?B.gray:"#AAA"}}>
           {p.number}
         </span>
         {p.label}
+        {isEn&&catCount>1&&<span style={{fontSize:8,color:B.greenBright,background:B.greenDark,borderRadius:8,padding:"1px 5px",marginLeft:2}}>{catCount}</span>}
         {!isEn&&<span style={{fontSize:7,color:"#AAA",marginLeft:2,fontStyle:"italic"}}>off</span>}
       </button>
     );
@@ -934,36 +927,31 @@ export default function App(){
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
         input[type=range]{-webkit-appearance:none;appearance:none}
-        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:${B.green};cursor:pointer;border:2px solid ${B.white};box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:transform 0.1s}
-        input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25)}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:${B.green};cursor:pointer;border:2px solid ${B.white};box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+        input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
         input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:${B.green};cursor:pointer;border:2px solid ${B.white}}
-        button{font-family:'Roboto Mono',monospace}
-        input[type=text]{font-family:'Roboto Mono',monospace}
-        select{font-family:'Roboto Mono',monospace}
+        button,input[type=text],select{font-family:'Roboto Mono',monospace}
       `}</style>
+
       {/* HEADER */}
-      <div style={{background:B.black,padding:"0 32px",display:"flex",alignItems:"center",justifyContent:"space-between",height:52}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:26,height:26,borderRadius:4,background:B.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:B.white}}>A</div>
-          <span style={{fontSize:11,fontWeight:700,color:B.white,letterSpacing:"0.12em",textTransform:"uppercase"}}>augment code</span>
-          <span style={{color:B.darkGray,margin:"0 6px"}}>·</span>
+      <div style={{background:B.black,padding:"0 32px",display:"flex",alignItems:"center",justifyContent:"space-between",height:50}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:24,height:24,borderRadius:4,background:B.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:B.white}}>A</div>
+          <span style={{fontSize:10,fontWeight:700,color:B.white,letterSpacing:"0.1em",textTransform:"uppercase"}}>augment code</span>
+          <span style={{color:B.darkGray,margin:"0 4px"}}>·</span>
           {editingName?(
             <input type="text" value={customerName} onChange={e=>setCustomerName(e.target.value)}
               onBlur={()=>setEditingName(false)} onKeyDown={e=>e.key==="Enter"&&setEditingName(false)}
-              autoFocus placeholder="Enter customer name…"
-              style={{background:"transparent",border:"none",borderBottom:`1px solid ${B.green}`,color:B.white,fontSize:11,outline:"none",width:200}}/>
+              autoFocus placeholder="Customer name…"
+              style={{background:"transparent",border:"none",borderBottom:`1px solid ${B.green}`,color:B.white,fontSize:10,outline:"none",width:180}}/>
           ):(
-            <span onClick={()=>setEditingName(true)} style={{fontSize:11,color:customerName?B.greenLight:B.gray,cursor:"pointer",borderBottom:`1px dashed ${B.darkGray}`}}>
+            <span onClick={()=>setEditingName(true)} style={{fontSize:10,color:customerName?B.greenLight:B.gray,cursor:"pointer",borderBottom:`1px dashed ${B.darkGray}`}}>
               {customerName||"Click to add customer name"}
             </span>
           )}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:9,color:B.gray,letterSpacing:"0.1em",textTransform:"uppercase"}}>{allResults.length} of {PLAYS.length} plays active</span>
-          <button onClick={()=>exportToPDF(allResults,customerName)}
-            style={{background:B.green,border:"none",borderRadius:4,padding:"7px 14px",cursor:"pointer",color:B.white,fontSize:10,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
-            ⬇ Export PDF
-          </button>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:9,color:B.gray,letterSpacing:"0.08em",textTransform:"uppercase"}}>{allCatResults.length} categories across {Object.keys(enabled).filter(k=>enabled[k]).length} plays</span>
         </div>
       </div>
       {/* TABS */}
@@ -973,46 +961,44 @@ export default function App(){
           <button onClick={()=>setActiveTab("summary")} style={{
             background:"transparent",border:"none",
             borderBottom:activeTab==="summary"?`3px solid ${B.green}`:"3px solid transparent",
-            padding:"12px 18px 9px",cursor:"pointer",
+            padding:"10px 14px 8px",cursor:"pointer",
             color:activeTab==="summary"?B.green:B.gray,
             fontWeight:activeTab==="summary"?700:500,
             fontSize:10,letterSpacing:"0.06em",textTransform:"uppercase",
-            transition:"all 0.15s",display:"flex",alignItems:"center",gap:6,
+            display:"flex",alignItems:"center",gap:5,
           }}>
-            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:2,background:activeTab==="summary"?B.green:"transparent",border:`1px solid ${activeTab==="summary"?B.green:B.gray}`,fontSize:8,fontWeight:700,color:activeTab==="summary"?B.white:B.gray}}>Σ</span>
+            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:15,height:15,borderRadius:2,background:activeTab==="summary"?B.green:"transparent",border:`1px solid ${activeTab==="summary"?B.green:B.gray}`,fontSize:8,fontWeight:700,color:activeTab==="summary"?B.white:B.gray}}>Σ</span>
             Summary
           </button>
         </div>
-        {/* Enable/disable toggle for active play */}
         {activePlay&&(
           <button onClick={()=>{
             const next=!enabled[activePlay.id];
             setEnabled(prev=>({...prev,[activePlay.id]:next}));
-            if(!next&&activeTab===activePlay.id) setActiveTab(activePlay.id);
           }} style={{
             background:"transparent",border:`1px solid ${enabled[activePlay.id]?B.red:B.green}`,
-            borderRadius:4,padding:"5px 12px",cursor:"pointer",
+            borderRadius:4,padding:"4px 10px",cursor:"pointer",
             color:enabled[activePlay.id]?B.red:B.green,
             fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",
-            transition:"all 0.15s",
           }}>
-            {enabled[activePlay.id]?"✕ Exclude from Summary":"+ Include in Summary"}
+            {enabled[activePlay.id]?"✕ Exclude":"+ Include"}
           </button>
         )}
       </div>
+
       {/* CONTENT */}
       {activeTab==="summary"?(
-        <SummaryTab allResults={allResults} customerName={customerName}/>
+        <SummaryTab allCatResults={allCatResults} customerName={customerName}/>
       ):activePlay?(
         enabled[activePlay.id]?(
           <PlayTab
             play={activePlay}
-            vals={values[activePlay.id]}
-            onChange={(key,val)=>handleChange(activePlay.id,key,val)}
-            scenarioIdx={scenarios[activePlay.id]}
-            setScenarioIdx={idx=>setScenarios(prev=>({...prev,[activePlay.id]:idx}))}
-            selectedCat={evalCats[activePlay.id]}
-            setSelectedCat={cat=>setEvalCats(prev=>({...prev,[activePlay.id]:cat}))}
+            enabledCats={enabledCats[activePlay.id]||[]}
+            catValues={catValues[activePlay.id]||{}}
+            catScenarios={catScenarios[activePlay.id]||{}}
+            onValueChange={(catId,key,val)=>handleValueChange(activePlay.id,catId,key,val)}
+            onScenarioChange={(catId,idx)=>handleScenarioChange(activePlay.id,catId,idx)}
+            onToggleCat={catId=>handleToggleCat(activePlay.id,catId)}
             thresholds={thresholds[activePlay.id]||{}}
             onThresholdChange={handleThresholdChange}
           />
@@ -1020,10 +1006,11 @@ export default function App(){
           <DisabledTab play={activePlay} onEnable={()=>setEnabled(prev=>({...prev,[activePlay.id]:true}))}/>
         )
       ):null}
+
       {/* FOOTER */}
-      <div style={{borderTop:"1px solid #E8E8E8",padding:"10px 32px",display:"flex",justifyContent:"space-between",alignItems:"center",background:B.offWhite}}>
+      <div style={{borderTop:"1px solid #E8E8E8",padding:"8px 32px",display:"flex",justifyContent:"space-between",alignItems:"center",background:B.offWhite}}>
         <span style={{fontSize:9,color:B.gray}}>* Illustrative estimates based on Augment Code pilot data and industry benchmarks.</span>
-        <span style={{fontSize:9,color:B.gray,letterSpacing:"0.08em",textTransform:"uppercase"}}>PRIVILEGED &amp; CONFIDENTIAL · augment code</span>
+        <span style={{fontSize:9,color:B.gray,letterSpacing:"0.06em",textTransform:"uppercase"}}>PRIVILEGED & CONFIDENTIAL · augment code</span>
       </div>
     </div>
   );
