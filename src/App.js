@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
+import { AuthProvider, useAuth, ALLOWED_DOMAIN } from "./AuthContext";
 
-const B = {
+export const B = {
   black:"#0D0D0D", green:"#158158", greenLight:"#1AAA6E",
   greenBright:"#22C97A", greenDark:"#0D6B48", white:"#FFFFFF",
   offWhite:"#F5F5F5", cardBg:"#F8F8F8", gray:"#888888",
@@ -9,7 +10,7 @@ const B = {
   disabledGray:"#CCCCCC", disabledBg:"#F5F5F5",
 };
 
-const USE_CASES = [
+export const USE_CASES = [
   {
     id:"code-review", label:"Code Review", number:"01",
     tagline:"Recover senior engineering time. Ship faster. Catch more bugs.",
@@ -619,7 +620,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
 
 // ─── HELPERS ───
 
-const fmt=(val,format)=>{
+export const fmt=(val,format)=>{
   if(val===undefined||val===null||isNaN(val)) return "—";
   if(format==="dollar") return "$"+Math.round(val).toLocaleString();
   if(format==="percent") return Math.round(val)+"%";
@@ -1125,9 +1126,31 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
   );
 }
 
+// ─── LOGIN SCREEN ───
+
+function LoginScreen(){
+  const {error}=useAuth();
+  return(
+    <div style={{minHeight:"100vh",background:B.black,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Roboto Mono',monospace"}}>
+      <div style={{textAlign:"center",marginBottom:40}}>
+        <div style={{width:56,height:56,borderRadius:10,background:B.green,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:700,color:B.white,marginBottom:16}}>A</div>
+        <h1 style={{fontSize:14,fontWeight:700,color:B.white,letterSpacing:"0.12em",textTransform:"uppercase",margin:"0 0 6px"}}>augment code</h1>
+        <h2 style={{fontSize:18,fontWeight:400,color:B.gray,margin:0}}>ROI Calculator</h2>
+      </div>
+      <div style={{background:"#1A1A1A",border:`1px solid ${B.darkGray}`,borderRadius:8,padding:"32px 40px",textAlign:"center",minWidth:320}}>
+        <p style={{fontSize:11,color:B.gray,margin:"0 0 20px",letterSpacing:"0.04em"}}>Sign in with your Augment Code account</p>
+        <div id="google-signin-button" style={{display:"flex",justifyContent:"center",marginBottom:16}}/>
+        {error&&<p style={{fontSize:11,color:B.red,margin:"12px 0 0"}}>{error}</p>}
+      </div>
+      {ALLOWED_DOMAIN&&<p style={{fontSize:9,color:B.darkGray,marginTop:24,letterSpacing:"0.06em",textTransform:"uppercase"}}>Restricted to {ALLOWED_DOMAIN} accounts</p>}
+    </div>
+  );
+}
+
 // ─── MAIN APP ───
 
-export default function App(){
+function ROICalculator(){
+  const {user,logout}=useAuth();
   const [activeTab,setActiveTab]=useState("code-review");
   const [customerName,setCustomerName]=useState("");
   const [editingName,setEditingName]=useState(false);
@@ -1275,8 +1298,16 @@ export default function App(){
             </span>
           )}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:9,color:B.gray,letterSpacing:"0.08em",textTransform:"uppercase"}}>{allCatResults.length} categories across {Object.keys(enabled).filter(k=>enabled[k]).length} use cases</span>
+          {user&&(
+            <>
+              <span style={{color:B.darkGray}}>·</span>
+              {user.picture&&<img src={user.picture} alt="" style={{width:22,height:22,borderRadius:"50%",border:`1px solid ${B.darkGray}`}} referrerPolicy="no-referrer"/>}
+              <span style={{fontSize:9,color:B.gray}}>{user.name||user.email}</span>
+              <button onClick={logout} style={{background:"transparent",border:`1px solid ${B.darkGray}`,borderRadius:3,padding:"3px 8px",cursor:"pointer",color:B.gray,fontSize:8,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}}>Sign out</button>
+            </>
+          )}
         </div>
       </div>
       {/* TABS */}
@@ -1341,4 +1372,24 @@ export default function App(){
       </div>
     </div>
   );
+}
+
+
+export default function App(){
+  return(
+    <AuthProvider>
+      <AppContent/>
+    </AuthProvider>
+  );
+}
+
+function AppContent(){
+  const {user,loading}=useAuth();
+  if(loading) return(
+    <div style={{minHeight:"100vh",background:B.black,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <span style={{color:B.gray,fontSize:12,fontFamily:"'Roboto Mono',monospace"}}>Loading…</span>
+    </div>
+  );
+  if(!user) return <LoginScreen/>;
+  return <ROICalculator/>;
 }
