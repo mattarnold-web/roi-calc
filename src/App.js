@@ -47,8 +47,6 @@ export const USE_CASES = [
           {key:"seniorDevs",label:"Senior engineers doing review",default:15,min:1,max:1000,step:1,unit:""},
           {key:"seniorHoursPerWeek",label:"Hours/week seniors spend on review",default:8,min:1,max:40,step:0.5,unit:"hrs"},
           {key:"seniorHourlyCost",label:"Senior engineer fully loaded cost",default:160,min:80,max:500,step:5,unit:"$/hr"},
-          {key:"hourlyCost",label:"Avg engineer cost (all reviewers)",default:120,min:50,max:400,step:5,unit:"$/hr"},
-          {key:"devs",label:"Total engineers in review",default:50,min:1,max:5000,step:1,unit:""},
           {key:"augmentCost",label:"Estimated annual Augment cost",default:180000,min:10000,max:5000000,step:5000,unit:"$"},
         ],
       },
@@ -120,6 +118,7 @@ export const USE_CASES = [
         desc:"Focus on coverage % gains and test quality",
         inputs:[
           {key:"devs",label:"Engineers writing/maintaining tests",default:80,min:1,max:5000,step:1,unit:""},
+          {key:"testTimePct",label:"% of week spent on unit tests",default:10,min:1,max:30,step:1,unit:"%"},
           {key:"currentCoverage",label:"Current avg unit test coverage",default:60,min:0,max:100,step:1,unit:"%"},
           {key:"criticalServices",label:"# of critical services in scope",default:5,min:1,max:100,step:1,unit:""},
           {key:"hourlyCost",label:"Fully loaded engineer cost",default:120,min:50,max:400,step:5,unit:"$/hr"},
@@ -148,16 +147,19 @@ export const USE_CASES = [
         timeSavings=0; incidentValue=0;
       } else {
         const weeklyHours=(v.devs||80)*40*((v.testTimePct||10)/100);
-        timeSavings=weeklyHours*52*(v.hourlyCost||120)*pct;
-        if(catId!=="coverage") ciSavings=(v.ciFailuresPerWeek||30)*52*1.5*(v.hourlyCost||120)*0.4;
+        const coverageFactor=catId==="coverage"
+          ? ((100-(v.currentCoverage||60))/40)*((v.criticalServices||5)/5) : 1;
+        timeSavings=weeklyHours*52*(v.hourlyCost||120)*pct*coverageFactor;
       }
       const totalBenefit=timeSavings+ciSavings+incidentValue;
       const cost=v.augmentCost||250000;
       const roi=((totalBenefit-cost)/cost)*100;
       const payback=cost/(totalBenefit/12);
+      const coverageFactorHrs=catId==="coverage"
+        ? ((100-(v.currentCoverage||60))/40)*((v.criticalServices||5)/5) : 1;
       const hoursRecovered=catId==="ci-stability"
         ? (v.ciFailuresPerWeek||30)*52*(v.mttrPerCIFailure||1.5)*(v.peoplePerCIFailure||1.5)*pct
-        : (v.devs||80)*40*((v.testTimePct||10)/100)*52*pct;
+        : (v.devs||80)*40*((v.testTimePct||10)/100)*52*pct*coverageFactorHrs;
       return {timeSavings,ciSavings,incidentValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080};
     },
     metrics:[
@@ -227,7 +229,7 @@ export const USE_CASES = [
         const currentCost=annual*(v.triageHoursPerFailure||1.5)*(v.triagePeople||2)*(v.hourlyCost||130);
         timeSavings=currentCost*pct;
       } else if(catId==="reliability"){
-        trunkLockSavings=(v.trunkLockHours||4)*52*(v.devsBlocked||50)*(v.hourlyCost||130)*0.5*0.6;
+        trunkLockSavings=(v.trunkLockHours||4)*52*(v.devsBlocked||50)*(v.hourlyCost||130)*pct*0.6;
         releaseValue=v.releaseDelayValue||200000;
       } else {
         const annual=(v.failuresPerWeek||50)*52;
@@ -240,7 +242,7 @@ export const USE_CASES = [
       const payback=cost/(totalBenefit/12);
       const hoursRecovered=catId==="triage"
         ?(v.failuresPerWeek||50)*52*(v.triageHoursPerFailure||1.5)*(v.triagePeople||2)*pct
-        :catId==="reliability"?(v.trunkLockHours||4)*52*(v.devsBlocked||50)*0.5*0.6
+        :catId==="reliability"?(v.trunkLockHours||4)*52*(v.devsBlocked||50)*pct*0.6
         :(v.failuresPerWeek||50)*52*(v.mttrHours||3)*(v.peoplePerFailure||2)*pct;
       const newMttr=catId==="mttr"?(v.mttrHours||3)*(1-pct):null;
       return {timeSavings,trunkLockSavings,releaseValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080,newMttr};

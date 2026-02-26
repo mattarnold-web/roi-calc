@@ -73,7 +73,8 @@ describe('Unit Test compute', () => {
     // weeklyHours = 80*40*(10/100) = 320;  timeSavings = 320*52*120*0.50 = $998,400
     expect(r.timeSavings).toBe(998400);
     expect(r.incidentValue).toBe(150000);
-    expect(r.totalBenefit).toBeGreaterThan(r.timeSavings); // includes ciSavings + incident
+    expect(r.ciSavings).toBe(0);
+    expect(r.totalBenefit).toBe(998400 + 150000);
   });
 
   it('ci-stability: uses CI failure inputs', () => {
@@ -86,11 +87,20 @@ describe('Unit Test compute', () => {
     expect(r.incidentValue).toBe(0); // CI-stability zeroes out incident
   });
 
-  it('coverage: no ciSavings', () => {
-    const vals = { devs: 80, testTimePct: 10, hourlyCost: 120, incidentValue: 100000, augmentCost: 250000 };
+  it('coverage: uses currentCoverage and criticalServices', () => {
+    const vals = { devs: 80, testTimePct: 10, currentCoverage: 60, criticalServices: 5,
+      hourlyCost: 120, incidentValue: 100000, augmentCost: 250000 };
     const r = uc.compute(vals, 0.50, 'coverage');
     expect(r.ciSavings).toBe(0);
     expect(r.incidentValue).toBe(100000);
+    // With defaults, coverageFactor = (100-60)/40 * 5/5 = 1.0, same as velocity base
+    expect(r.timeSavings).toBe(998400);
+    // Higher current coverage → less room for improvement → lower savings
+    const rHigh = uc.compute({ ...vals, currentCoverage: 80 }, 0.50, 'coverage');
+    expect(rHigh.timeSavings).toBe(998400 * 0.5);
+    // More critical services → more scope → higher savings
+    const rMore = uc.compute({ ...vals, criticalServices: 10 }, 0.50, 'coverage');
+    expect(rMore.timeSavings).toBe(998400 * 2);
   });
 });
 
@@ -115,12 +125,16 @@ describe('Build Failure compute', () => {
     expect(r.newMttr).toBeNull(); // Only mttr category has newMttr
   });
 
-  it('reliability: trunk lock + release delay', () => {
+  it('reliability: trunk lock + release delay, scales with pct', () => {
     const vals = { trunkLockHours: 4, devsBlocked: 50, hourlyCost: 130, releaseDelayValue: 200000, augmentCost: 200000 };
     const r = uc.compute(vals, 0.70, 'reliability');
-    expect(r.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.5 * 0.6);
+    expect(r.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.70 * 0.6);
     expect(r.releaseValue).toBe(200000);
     expect(r.timeSavings).toBe(0);
+    // Scenario selector changes the result
+    const rLow = uc.compute(vals, 0.50, 'reliability');
+    expect(rLow.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.50 * 0.6);
+    expect(rLow.trunkLockSavings).toBeLessThan(r.trunkLockSavings);
   });
 });
 
@@ -152,6 +166,26 @@ describe('Interactive compute', () => {
       retiredToolSpend: 60000, augmentCost: 240000 };
     const r = uc.compute(vals, 0.80, 'consolidation');
     expect(r.toolValue).toBe(60000);
+  });
+});
+
+// ─── Every slider must affect output ───
+
+describe('Every input slider affects totalBenefit or roi', () => {
+  USE_CASES.forEach(uc => {
+    uc.evalCategories.forEach(cat => {
+      cat.inputs.forEach(inp => {
+        it(`${uc.id} > ${cat.id}: changing "${inp.key}" changes output`, () => {
+          const defaults = {};
+          cat.inputs.forEach(i => { defaults[i.key] = i.default; });
+          const base = uc.compute(defaults, uc.savingsRange[1], cat.id);
+          const tweaked = { ...defaults, [inp.key]: inp.key === 'augmentCost' ? inp.default * 2 : inp.default * 1.5 };
+          const result = uc.compute(tweaked, uc.savingsRange[1], cat.id);
+          const changed = result.totalBenefit !== base.totalBenefit || result.roi !== base.roi;
+          expect(changed).toBe(true);
+        });
+      });
+    });
   });
 });
 
