@@ -352,7 +352,7 @@ function loadJsPDF() {
   });
 }
 
-async function generatePDF(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, ballpark, useBallparkCost, ballparkEstimate, selectedBallparkCost) {
+async function generatePDF(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, pricing, usePricingCost, selectedPricingCost) {
   const lib = await loadJsPDF();
   const doc = new lib.jsPDF({ orientation:"landscape", unit:"pt", format:"letter" });
   const W = doc.internal.pageSize.getWidth();
@@ -383,7 +383,7 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
   });
   const grandTotal = allCatResults.reduce((s,r) => s+r.results.totalBenefit, 0);
   const manualCostPDF = Object.values(useCaseMap).reduce((s,p) => s+p.maxCost, 0);
-  const grandCost = useBallparkCost ? selectedBallparkCost : manualCostPDF;
+  const grandCost = usePricingCost ? selectedPricingCost : manualCostPDF;
   const grandNet = grandTotal - grandCost;
   const grandROI = grandCost > 0 ? ((grandTotal-grandCost)/grandCost)*100 : 0;
   const grandPayback = grandCost > 0 ? grandCost/(grandTotal/12) : 0;
@@ -508,18 +508,17 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     doc.text(lines, margin+4, sy+24);
   }
 
-  // Ballpark Cost Estimator section (if enabled)
-  if(useBallparkCost && ballpark && sy < H-100) {
-    const estLabel = ballparkEstimate === "high" ? "High" : "Low";
+  // Credit Pricing Estimator section (if enabled)
+  if(usePricingCost && pricing && sy < H-100) {
     sy += 16;
     rect(margin-4, sy-4, W-margin*2+8, 80, greenBg);
     doc.setDrawColor(...green); doc.setLineWidth(1.5); doc.rect(margin-4, sy-4, W-margin*2+8, 80, "S");
-    txt("BALLPARK AUGMENT COST ESTIMATOR ("+estLabel+" Estimate)", margin+4, sy+10, {size:7, color:green, bold:true});
-    // Three info blocks
-    const bw = (W - margin*2 - 24) / 3;
-    [{l:"Platform Tier",v:ballpark.tierName+" ($"+(ballpark.platformFee/1000)+"k/yr)",s:"Up to "+ballpark.maxDevs+" devs"},
-     {l:"Investment Range",v:"$"+Math.round(ballpark.investmentLow/1000)+"k – $"+Math.round(ballpark.investmentHigh/1000)+"k/yr",s:"Platform + credits"},
-     {l:"Selected for ROI ("+estLabel+")",v:"$"+Math.round(selectedBallparkCost).toLocaleString()+"/yr",s:formatCredits(ballparkEstimate==="high"?ballpark.creditsHigh:ballpark.creditsLow)+" enterprise credits"},
+    txt("AUGMENT CREDIT PRICING ESTIMATOR", margin+4, sy+10, {size:7, color:green, bold:true});
+    const bw = (W - margin*2 - 36) / 4;
+    [{l:"Platform Tier",v:pricing.tierName+" ($"+(pricing.platformFee/1000)+"k/yr)",s:"Up to "+pricing.maxDevs+" devs"},
+     {l:"Monthly Credit Fee",v:"$"+Math.round(pricing.monthlyCreditFee).toLocaleString()+"/mo",s:formatCredits(pricing.totalCreditsPerMonth)+" credits/mo"},
+     {l:"Annual Credit Fee",v:"$"+Math.round(pricing.annualCreditFee).toLocaleString()+"/yr",s:"12 × monthly"},
+     {l:"Total Annual Fee",v:"$"+Math.round(pricing.totalAnnualFee).toLocaleString()+"/yr",s:"Platform + credits"},
     ].forEach((b,i) => {
       const bx = margin + 4 + i*(bw+12);
       txt(b.l, bx, sy+26, {size:6, color:green, bold:true});
@@ -661,7 +660,7 @@ function loadPptxGenJS() {
   });
 }
 
-async function generatePPTX(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, ballpark, useBallparkCost, ballparkEstimate, selectedBallparkCost) {
+async function generatePPTX(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, pricing, usePricingCost, selectedPricingCost) {
   const PptxGenJS = await loadPptxGenJS();
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
@@ -682,7 +681,7 @@ async function generatePPTX(allCatResults, customerName, enabled, enabledCats, c
   });
   const grandTotal = allCatResults.reduce((s,r) => s+r.results.totalBenefit, 0);
   const manualCost = Object.values(useCaseMap).reduce((s,p) => s+p.maxCost, 0);
-  const grandCost = useBallparkCost ? selectedBallparkCost : manualCost;
+  const grandCost = usePricingCost ? selectedPricingCost : manualCost;
   const grandNet = grandTotal - grandCost;
   const grandROI = grandCost > 0 ? ((grandTotal-grandCost)/grandCost)*100 : 0;
   const grandPayback = grandCost > 0 ? grandCost/(grandTotal/12) : 0;
@@ -900,7 +899,7 @@ function loadSheetJS() {
   });
 }
 
-async function generateExcel(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, ballpark, useBallparkCost, ballparkEstimate, selectedBallparkCost) {
+async function generateExcel(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, pricing, usePricingCost, selectedPricingCost) {
   const XLSX = await loadSheetJS();
   const wb = XLSX.utils.book_new();
 
@@ -913,7 +912,7 @@ async function generateExcel(allCatResults, customerName, enabled, enabledCats, 
   });
   const grandTotal = allCatResults.reduce((s,r) => s+r.results.totalBenefit, 0);
   const manualCost = Object.values(useCaseMap).reduce((s,p) => s+p.maxCost, 0);
-  const grandCost = useBallparkCost ? selectedBallparkCost : manualCost;
+  const grandCost = usePricingCost ? selectedPricingCost : manualCost;
   const grandROI = grandCost > 0 ? ((grandTotal-grandCost)/grandCost)*100 : 0;
   const grandPayback = grandCost > 0 ? grandCost/(grandTotal/12) : 0;
   const grandFTE = allCatResults.reduce((s,r) => s+(r.results.fteEquivalent||0), 0);
@@ -1014,29 +1013,32 @@ async function generateExcel(allCatResults, customerName, enabled, enabledCats, 
     XLSX.utils.book_append_sheet(wb, ucWs, sheetName);
   });
 
-  // ─── Ballpark Cost Sheet (if enabled) ───
-  if(useBallparkCost && ballpark) {
+  // ─── Credit Pricing Sheet (if enabled) ───
+  if(usePricingCost && pricing) {
     const bRows = [
-      ["Ballpark Augment Cost Estimator"],
+      ["Augment Credit Pricing Estimator"],
       [],
-      ["Total Developers in Scope", ballpark.totalDevs],
-      ["Platform Tier", ballpark.tierName],
-      ["Platform Fee ($/yr)", ballpark.platformFee],
-      ["Max Developers", ballpark.maxDevs],
+      ["Total Developers", pricing.totalDevs],
+      ["Active Developers (Interactive)", pricing.activeDevs],
+      ["Platform Tier", pricing.tierName],
+      ["Platform Fee ($/yr)", pricing.platformFee],
       [],
-      ["Investment Range (Low)", Math.round(ballpark.investmentLow)],
-      ["Investment Range (High)", Math.round(ballpark.investmentHigh)],
-      ["Credit Pool (Low)", Math.round(ballpark.creditsLow)],
-      ["Credit Pool (High)", Math.round(ballpark.creditsHigh)],
+      ["Category", "Quantity/mo", "Credits/unit", "Credits/mo", "$/mo"],
+      ["Interactive", pricing.activeDevs+"×activities", "", Math.round(pricing.interactiveCreditsPerMonth), Math.round(pricing.interactiveDollarsPerMonth)],
+      ["Code Review (PRs)", "", "", Math.round(pricing.crCreditsPerMonth), Math.round(pricing.crCreditsPerMonth/pricing.creditsPerDollar)],
+      ["Unit Tests", "", "", Math.round(pricing.utCreditsPerMonth), Math.round(pricing.utCreditsPerMonth/pricing.creditsPerDollar)],
+      ["TOTAL", "", "", Math.round(pricing.totalCreditsPerMonth), Math.round(pricing.monthlyCreditFee)],
       [],
-      ["Selected Estimate", ballparkEstimate==="high"?"High":"Low"],
-      ["Selected Cost ($/yr)", Math.round(selectedBallparkCost)],
+      ["Monthly Credit Fee", Math.round(pricing.monthlyCreditFee)],
+      ["Annual Credit Fee", Math.round(pricing.annualCreditFee)],
+      ["Platform Fee", Math.round(pricing.platformFee)],
+      ["Total Annual Fee", Math.round(pricing.totalAnnualFee)],
       [],
       ["* This is an illustrative estimate only, not a binding quote."],
     ];
     const bWs = XLSX.utils.aoa_to_sheet(bRows);
-    bWs["!cols"] = [{wch:30},{wch:20}];
-    XLSX.utils.book_append_sheet(wb, bWs, "Ballpark Cost");
+    bWs["!cols"] = [{wch:30},{wch:18},{wch:14},{wch:18},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, bWs, "Credit Pricing");
   }
 
   // Save
@@ -1057,13 +1059,25 @@ export const fmt=(val,format)=>{
 
 const SL=["Conservative","Midpoint","Optimistic"];
 
-// ─── BALLPARK COST ESTIMATOR ───
+// ─── CREDIT-BASED PRICING MODEL ───
 
 export const PLATFORM_TIERS = [
   { name:"Core", fee:50000, maxDevs:200 },
   { name:"Standard", fee:100000, maxDevs:1000 },
   { name:"Advanced", fee:150000, maxDevs:Infinity },
 ];
+
+export const CREDIT_PRICING_DEFAULTS = {
+  totalDevs: 500,
+  activeRatio: 60,          // % of devs active in Augment (interactive)
+  activitiesPerMonth: 100,  // interactive activities per user per month
+  creditsPerActivity: 500,  // credits per interactive activity
+  prsPerMonth: 4000,        // PRs for code review per month
+  creditsPerPR: 1000,       // credits per PR automation
+  testsPerMonth: 20000,     // unit tests generated per month
+  creditsPerTest: 250,      // credits per test automation
+  creditsPerDollar: 500,    // fixed: $1 = 500 enterprise credits
+};
 
 export function extractTotalDevs(useCases, enabled, enabledCats, catValues) {
   let maxDevs = 0;
@@ -1082,41 +1096,49 @@ export function extractTotalDevs(useCases, enabled, enabledCats, catValues) {
   return maxDevs || 50;
 }
 
-export function computeBallparkCost(totalDevs, totalBenefit) {
-  // Select platform tier based on developer count
-  const tier = PLATFORM_TIERS.find(t => totalDevs <= t.maxDevs) || PLATFORM_TIERS[2];
+export function computeCreditPricing(config) {
+  const c = { ...CREDIT_PRICING_DEFAULTS, ...config };
 
-  // Investment range targeting 2–4× ROI multiple (benefit / cost)
-  // 4× ROI → cost = benefit / 4 (low end)
-  // 2× ROI → cost = benefit / 2 (high end)
-  const rawLow = totalBenefit / 4;
-  const rawHigh = totalBenefit / 2;
+  // Platform tier based on total devs
+  const tier = PLATFORM_TIERS.find(t => c.totalDevs <= t.maxDevs) || PLATFORM_TIERS[2];
 
-  // Floor at platform fee (minimum deal size)
-  const investmentLow = Math.max(tier.fee, rawLow);
-  const investmentHigh = Math.max(tier.fee, rawHigh);
-  const midpointInvestment = (investmentLow + investmentHigh) / 2;
+  // Interactive credits
+  const activeDevs = Math.round(c.totalDevs * (c.activeRatio / 100));
+  const interactiveCreditsPerMonth = activeDevs * c.activitiesPerMonth * c.creditsPerActivity;
+  const interactiveDollarsPerMonth = interactiveCreditsPerMonth / c.creditsPerDollar;
 
-  // Credit spend = total investment minus platform fee
-  const creditSpendLow = Math.max(0, investmentLow - tier.fee);
-  const creditSpendHigh = Math.max(0, investmentHigh - tier.fee);
+  // Non-interactive credits (Code Review + Unit Tests)
+  const crCreditsPerMonth = c.prsPerMonth * c.creditsPerPR;
+  const utCreditsPerMonth = c.testsPerMonth * c.creditsPerTest;
+  const nonInteractiveCreditsPerMonth = crCreditsPerMonth + utCreditsPerMonth;
 
-  // $1 = 500 enterprise credits
-  const creditsLow = creditSpendLow * 500;
-  const creditsHigh = creditSpendHigh * 500;
+  // Totals
+  const totalCreditsPerMonth = interactiveCreditsPerMonth + nonInteractiveCreditsPerMonth;
+  const monthlyCreditFee = totalCreditsPerMonth / c.creditsPerDollar;
+  const annualCreditFee = monthlyCreditFee * 12;
+  const platformFee = tier.fee;
+  const totalAnnualFee = annualCreditFee + platformFee;
 
   return {
+    // Tier
     tierName: tier.name,
-    platformFee: tier.fee,
+    platformFee,
     maxDevs: tier.maxDevs === Infinity ? "Unlimited" : tier.maxDevs,
-    totalDevs,
-    investmentLow,
-    investmentHigh,
-    midpointInvestment,
-    creditSpendLow,
-    creditSpendHigh,
-    creditsLow,
-    creditsHigh,
+    totalDevs: c.totalDevs,
+    activeDevs,
+    // Interactive
+    interactiveCreditsPerMonth,
+    interactiveDollarsPerMonth,
+    // Non-interactive
+    crCreditsPerMonth,
+    utCreditsPerMonth,
+    nonInteractiveCreditsPerMonth,
+    // Totals
+    totalCreditsPerMonth,
+    monthlyCreditFee,
+    annualCreditFee,
+    totalAnnualFee,
+    creditsPerDollar: c.creditsPerDollar,
   };
 }
 
@@ -1127,130 +1149,151 @@ function formatCredits(n) {
   return String(Math.round(n));
 }
 
-function BallparkCostPanel({ ballpark, useBallparkCost, onToggle, ballparkEstimate, onEstimateChange }) {
-  const selectedCost = ballparkEstimate === "high" ? ballpark.investmentHigh : ballpark.investmentLow;
-  const selectedCreditSpend = ballparkEstimate === "high" ? ballpark.creditSpendHigh : ballpark.creditSpendLow;
+function CreditPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, onInputChange }) {
+  const cellLabel={fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:500,padding:"6px 8px",textAlign:"left",borderBottom:"1px solid #F0F0F0"};
+  const cellVal={fontSize:10,fontWeight:600,color:B.black,padding:"6px 8px",textAlign:"right",borderBottom:"1px solid #F0F0F0"};
+  const cellHead={fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:700,padding:"6px 8px",borderBottom:`2px solid ${B.green}`};
+
+  const editableCell = (key, val, opts={}) => (
+    <td style={{...cellVal,padding:"3px 4px"}}>
+      <input type="number" value={val} onChange={e=>onInputChange(key,Number(e.target.value))}
+        min={opts.min||0} step={opts.step||1}
+        style={{width:"100%",maxWidth:90,textAlign:"right",border:`1px solid #E0E0E0`,borderRadius:3,
+          padding:"3px 6px",fontSize:10,fontWeight:600,color:B.black,outline:"none",background:B.offWhite}} />
+    </td>
+  );
 
   return (
-    <div style={{background:B.white,border:`2px solid ${useBallparkCost?B.green:"#E8E8E8"}`,borderTop:`3px solid ${useBallparkCost?B.green:B.amber}`,borderRadius:4,padding:"16px 18px",marginBottom:16,transition:"border-color 0.2s"}}>
+    <div style={{background:B.white,border:`2px solid ${usePricingCost?B.green:"#E8E8E8"}`,borderTop:`3px solid ${usePricingCost?B.green:B.amber}`,borderRadius:4,padding:"16px 18px",marginBottom:16,transition:"border-color 0.2s"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{fontSize:9,color:useBallparkCost?B.green:B.amber,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Ballpark Augment Cost Estimator</div>
-          {/* Toggle switch */}
+          <div style={{fontSize:9,color:usePricingCost?B.green:B.amber,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Augment Credit Pricing Estimator</div>
           <button onClick={onToggle} style={{
             display:"inline-flex",alignItems:"center",gap:6,
-            background:useBallparkCost?B.greenBg:B.offWhite,
-            border:`1px solid ${useBallparkCost?B.green:B.disabledGray}`,
+            background:usePricingCost?B.greenBg:B.offWhite,
+            border:`1px solid ${usePricingCost?B.green:B.disabledGray}`,
             borderRadius:12,padding:"3px 10px",cursor:"pointer",
-            fontSize:8,fontWeight:600,
-            color:useBallparkCost?B.greenDark:B.gray,
-            transition:"all 0.15s",
+            fontSize:8,fontWeight:600,color:usePricingCost?B.greenDark:B.gray,transition:"all 0.15s",
           }}>
-            <span style={{
-              display:"inline-block",width:20,height:12,borderRadius:6,
-              background:useBallparkCost?B.green:B.disabledGray,
-              position:"relative",transition:"background 0.15s",
-            }}>
-              <span style={{
-                position:"absolute",top:2,left:useBallparkCost?10:2,
-                width:8,height:8,borderRadius:4,background:B.white,
-                transition:"left 0.15s",boxShadow:"0 1px 2px rgba(0,0,0,0.2)",
-              }}/>
+            <span style={{display:"inline-block",width:20,height:12,borderRadius:6,
+              background:usePricingCost?B.green:B.disabledGray,position:"relative",transition:"background 0.15s"}}>
+              <span style={{position:"absolute",top:2,left:usePricingCost?10:2,
+                width:8,height:8,borderRadius:4,background:B.white,transition:"left 0.15s",boxShadow:"0 1px 2px rgba(0,0,0,0.2)"}}/>
             </span>
-            {useBallparkCost?"Included in ROI":"Excluded from ROI"}
+            {usePricingCost?"Included in ROI":"Excluded from ROI"}
           </button>
         </div>
-        <div style={{fontSize:9,color:B.gray}}>Based on {ballpark.totalDevs} developer{ballpark.totalDevs!==1?"s":""} in scope</div>
+        <div style={{fontSize:9,color:B.gray}}>{pricing.totalDevs} total devs · {pricing.activeDevs} active ({pricingInputs.activeRatio}%)</div>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-        {/* Platform Tier */}
-        <div style={{background:B.offWhite,borderRadius:4,padding:"12px 14px",borderLeft:`3px solid ${B.green}`}}>
-          <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500,marginBottom:4}}>Platform Tier</div>
-          <div style={{fontSize:18,fontWeight:700,color:B.greenDark,lineHeight:1}}>{ballpark.tierName}</div>
-          <div style={{fontSize:9,color:B.gray,marginTop:4}}>Up to {ballpark.maxDevs} devs · ${(ballpark.platformFee/1000).toFixed(0)}k/yr</div>
-        </div>
-        {/* Recommended Investment Range */}
-        <div style={{background:B.offWhite,borderRadius:4,padding:"12px 14px",borderLeft:`3px solid ${B.green}`}}>
-          <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:700,marginBottom:4}}>Recommended Investment</div>
-          <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>
-            ${Math.round(ballpark.investmentLow/1000).toLocaleString()}k – ${Math.round(ballpark.investmentHigh/1000).toLocaleString()}k
+      {/* Top-level KPI boxes */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}>
+        {[
+          {label:"Platform Tier",value:pricing.tierName,sub:`Up to ${pricing.maxDevs} devs · $${(pricing.platformFee/1000).toFixed(0)}k/yr`},
+          {label:"Monthly Credit Fee",value:"$"+Math.round(pricing.monthlyCreditFee).toLocaleString(),sub:formatCredits(pricing.totalCreditsPerMonth)+" credits/mo"},
+          {label:"Annual Credit Fee",value:"$"+Math.round(pricing.annualCreditFee).toLocaleString(),sub:"12 × monthly credit fee"},
+          {label:"Total Annual Fee",value:"$"+Math.round(pricing.totalAnnualFee).toLocaleString(),sub:"Platform + credits",highlight:true},
+        ].map(s=>(
+          <div key={s.label} style={{background:s.highlight?B.greenBg:B.offWhite,borderRadius:4,padding:"10px 12px",borderLeft:`3px solid ${s.highlight?B.green:B.greenLight}`}}>
+            <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:500,marginBottom:3}}>{s.label}</div>
+            <div style={{fontSize:s.highlight?18:15,fontWeight:700,color:s.highlight?B.green:B.black,lineHeight:1}}>{s.value}</div>
+            <div style={{fontSize:8,color:B.gray,marginTop:3}}>{s.sub}</div>
           </div>
-          <div style={{fontSize:9,color:B.gray,marginTop:4}}>per year (platform + credits)</div>
-        </div>
-        {/* Credit Pool Range */}
-        <div style={{background:B.offWhite,borderRadius:4,padding:"12px 14px",borderLeft:`3px solid ${B.green}`}}>
-          <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500,marginBottom:4}}>Estimated Credit Pool</div>
-          <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>
-            {formatCredits(ballpark.creditsLow)} – {formatCredits(ballpark.creditsHigh)}
-          </div>
-          <div style={{fontSize:9,color:B.gray,marginTop:4}}>enterprise credits/yr ($1 = 500 credits)</div>
-        </div>
+        ))}
       </div>
 
-      {/* Low / High estimate selector */}
-      {useBallparkCost && (
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Select Estimate for ROI Calculation</div>
-          <div style={{display:"flex",gap:6}}>
-            {[
-              {key:"low",label:"Low Estimate",desc:"Higher ROI (~4x target)",value:ballpark.investmentLow,credits:ballpark.creditsLow},
-              {key:"high",label:"High Estimate",desc:"Conservative ROI (~2x target)",value:ballpark.investmentHigh,credits:ballpark.creditsHigh},
-            ].map(opt=>(
-              <button key={opt.key} onClick={()=>onEstimateChange(opt.key)} style={{
-                flex:1,padding:"10px 14px",borderRadius:4,cursor:"pointer",
-                border:`2px solid ${ballparkEstimate===opt.key?B.green:"#E0E0E0"}`,
-                background:ballparkEstimate===opt.key?B.greenBg:B.white,
-                textAlign:"left",transition:"all 0.15s",
-              }}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-                  <span style={{fontSize:9,fontWeight:700,color:ballparkEstimate===opt.key?B.greenDark:B.darkGray,textTransform:"uppercase",letterSpacing:"0.04em"}}>{opt.label}</span>
-                  <span style={{fontSize:8,color:ballparkEstimate===opt.key?B.green:B.gray,fontWeight:600}}>{opt.desc}</span>
-                </div>
-                <div style={{fontSize:16,fontWeight:700,color:ballparkEstimate===opt.key?B.green:B.black,lineHeight:1}}>
-                  ${Math.round(opt.value).toLocaleString()}<span style={{fontSize:10,fontWeight:500,color:B.gray}}>/yr</span>
-                </div>
-                <div style={{fontSize:8,color:B.gray,marginTop:3}}>{formatCredits(opt.credits)} credits · Platform: ${(ballpark.platformFee/1000).toFixed(0)}k + Credits: ${Math.round((opt.value-ballpark.platformFee)/1000).toLocaleString()}k</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Credit consumption table */}
+      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
+        <thead>
+          <tr>
+            <th style={{...cellHead,textAlign:"left"}}>Category</th>
+            <th style={{...cellHead,textAlign:"right"}}>Quantity/mo</th>
+            <th style={{...cellHead,textAlign:"right"}}>Credits/unit</th>
+            <th style={{...cellHead,textAlign:"right"}}>Credits/mo</th>
+            <th style={{...cellHead,textAlign:"right"}}>$/mo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* Interactive row */}
+          <tr>
+            <td style={cellLabel}><strong style={{color:B.black}}>Interactive</strong><br/><span style={{fontSize:7}}>{pricing.activeDevs} users × {pricingInputs.activitiesPerMonth} activities/mo</span></td>
+            {editableCell("activitiesPerMonth",pricingInputs.activitiesPerMonth,{min:1,step:10})}
+            {editableCell("creditsPerActivity",pricingInputs.creditsPerActivity,{min:1,step:50})}
+            <td style={cellVal}>{formatCredits(pricing.interactiveCreditsPerMonth)}</td>
+            <td style={cellVal}>${Math.round(pricing.interactiveDollarsPerMonth).toLocaleString()}</td>
+          </tr>
+          {/* Code Review row */}
+          <tr style={{background:B.cardBg}}>
+            <td style={cellLabel}><strong style={{color:B.black}}>Code Review (PRs)</strong></td>
+            {editableCell("prsPerMonth",pricingInputs.prsPerMonth,{min:1,step:100})}
+            {editableCell("creditsPerPR",pricingInputs.creditsPerPR,{min:1,step:100})}
+            <td style={cellVal}>{formatCredits(pricing.crCreditsPerMonth)}</td>
+            <td style={cellVal}>${Math.round(pricing.crCreditsPerMonth/pricing.creditsPerDollar).toLocaleString()}</td>
+          </tr>
+          {/* Unit Tests row */}
+          <tr>
+            <td style={cellLabel}><strong style={{color:B.black}}>Unit Tests</strong></td>
+            {editableCell("testsPerMonth",pricingInputs.testsPerMonth,{min:1,step:500})}
+            {editableCell("creditsPerTest",pricingInputs.creditsPerTest,{min:1,step:25})}
+            <td style={cellVal}>{formatCredits(pricing.utCreditsPerMonth)}</td>
+            <td style={cellVal}>${Math.round(pricing.utCreditsPerMonth/pricing.creditsPerDollar).toLocaleString()}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr style={{borderTop:`2px solid ${B.green}`,background:B.greenBg}}>
+            <td style={{...cellLabel,fontWeight:700,color:B.greenDark,borderBottom:"none"}}>TOTAL</td>
+            <td style={{...cellVal,borderBottom:"none"}} colSpan={2}>{formatCredits(pricing.totalCreditsPerMonth)} credits/mo</td>
+            <td style={{...cellVal,borderBottom:"none"}}/>
+            <td style={{...cellVal,fontWeight:700,color:B.green,fontSize:12,borderBottom:"none"}}>${Math.round(pricing.monthlyCreditFee).toLocaleString()}</td>
+          </tr>
+        </tfoot>
+      </table>
 
-      {/* Breakdown bar for selected estimate */}
-      {useBallparkCost && (
+      {/* Editable config row */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
+        {[
+          {key:"totalDevs",label:"Total Developers",val:pricingInputs.totalDevs,min:1,step:10},
+          {key:"activeRatio",label:"Active in Augment (%)",val:pricingInputs.activeRatio,min:1,max:100,step:5},
+          {key:"creditsPerDollar",label:"Credits per Dollar",val:pricingInputs.creditsPerDollar,min:1,step:50},
+        ].map(f=>(
+          <div key={f.key} style={{display:"flex",alignItems:"center",gap:6,background:B.offWhite,borderRadius:4,padding:"6px 10px"}}>
+            <label style={{fontSize:8,color:B.gray,fontWeight:500,whiteSpace:"nowrap"}}>{f.label}</label>
+            <input type="number" value={f.val} onChange={e=>onInputChange(f.key,Number(e.target.value))}
+              min={f.min} max={f.max} step={f.step}
+              style={{width:70,textAlign:"right",border:`1px solid #E0E0E0`,borderRadius:3,padding:"3px 6px",fontSize:10,fontWeight:600,color:B.black,outline:"none",background:B.white}} />
+          </div>
+        ))}
+      </div>
+
+      {/* Breakdown bar */}
+      {pricing.totalAnnualFee > 0 && (
         <div style={{marginBottom:10}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-            <span style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em"}}>Investment Breakdown ({ballparkEstimate === "high" ? "High" : "Low"} Estimate)</span>
-            <span style={{fontSize:9,fontWeight:700,color:B.darkGray}}>${Math.round(selectedCost).toLocaleString()}/yr</span>
+            <span style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em"}}>Annual Investment Breakdown</span>
+            <span style={{fontSize:9,fontWeight:700,color:B.darkGray}}>${Math.round(pricing.totalAnnualFee).toLocaleString()}/yr</span>
           </div>
           <div style={{display:"flex",height:6,borderRadius:3,overflow:"hidden",background:B.offWhite}}>
-            {selectedCost > 0 && (
-              <>
-                <div style={{width:(ballpark.platformFee/selectedCost*100)+"%",background:B.green,borderRadius:"3px 0 0 3px"}} title={"Platform fee: $"+ballpark.platformFee.toLocaleString()}/>
-                <div style={{width:(selectedCreditSpend/selectedCost*100)+"%",background:B.greenLight}} title={"Credits: $"+Math.round(selectedCreditSpend).toLocaleString()}/>
-              </>
-            )}
+            <div style={{width:(pricing.platformFee/pricing.totalAnnualFee*100)+"%",background:B.green,borderRadius:"3px 0 0 3px"}} title={"Platform: $"+pricing.platformFee.toLocaleString()}/>
+            <div style={{width:(pricing.annualCreditFee/pricing.totalAnnualFee*100)+"%",background:B.greenLight}} title={"Credits: $"+Math.round(pricing.annualCreditFee).toLocaleString()}/>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
-            <span style={{fontSize:8,color:B.green,fontWeight:600}}>Platform: ${(ballpark.platformFee/1000).toFixed(0)}k</span>
-            <span style={{fontSize:8,color:B.greenLight,fontWeight:600}}>Credits: ${Math.round(selectedCreditSpend/1000).toLocaleString()}k</span>
+            <span style={{fontSize:8,color:B.green,fontWeight:600}}>Platform: ${(pricing.platformFee/1000).toFixed(0)}k/yr</span>
+            <span style={{fontSize:8,color:B.greenLight,fontWeight:600}}>Credits: ${Math.round(pricing.annualCreditFee/1000).toLocaleString()}k/yr</span>
           </div>
         </div>
       )}
 
-      {!useBallparkCost && (
+      {!usePricingCost && (
         <div style={{background:B.amberBg,border:`1px solid ${B.amber}`,borderRadius:4,padding:"8px 12px",fontSize:9,color:B.darkGray,lineHeight:1.6}}>
-          Ballpark cost is currently <strong>excluded</strong> from ROI calculations. The per-category manual cost sliders are being used instead. Toggle on to use this estimate.
+          Credit pricing is currently <strong>excluded</strong> from ROI calculations. Per-category manual cost sliders are being used instead. Toggle on to use this estimate.
         </div>
       )}
-      {useBallparkCost && (
+      {usePricingCost && (
         <div style={{background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:4,padding:"8px 12px",fontSize:9,color:B.greenDark,lineHeight:1.6}}>
-          Using <strong>{ballparkEstimate === "high" ? "high" : "low"} estimate of ${Math.round(selectedCost).toLocaleString()}/yr</strong> as platform cost in all ROI calculations. Per-category cost sliders are overridden.
+          Using <strong>${Math.round(pricing.totalAnnualFee).toLocaleString()}/yr</strong> as platform cost in all ROI calculations. Per-category cost sliders are overridden.
         </div>
       )}
 
-      {/* Disclaimer */}
       <div style={{marginTop:10,padding:"8px 12px",background:"#FAFAFA",border:"1px solid #E8E8E8",borderRadius:4,fontSize:8,color:B.gray,lineHeight:1.7,fontStyle:"italic"}}>
         This is an illustrative estimate only, not a binding quote. Actual Augment pricing depends on contract terms, negotiated discounts, promotional credits, and usage patterns. Contact your Augment account team for a formal proposal.
       </div>
@@ -1667,7 +1710,7 @@ function DisabledTab({useCase,onEnable}){
 
 // ─── SUMMARY TAB (per-category breakdown) ───
 
-function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,onToggleBallpark,ballparkEstimate,onEstimateChange,selectedBallparkCost}){
+function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,pricing,usePricingCost,onTogglePricing,pricingInputs,onPricingInputChange,selectedPricingCost}){
   if(allCatResults.length===0) return(
     <div style={{padding:"60px 32px",textAlign:"center"}}>
       <div style={{fontSize:14,color:B.gray,marginBottom:8}}>No use cases are currently included.</div>
@@ -1682,7 +1725,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
   });
   const grandTotal=allCatResults.reduce((s,r)=>s+r.results.totalBenefit,0);
   const manualCost=Object.values(useCaseMap).reduce((s,p)=>s+p.maxCost,0);
-  const grandCost=useBallparkCost?selectedBallparkCost:manualCost;
+  const grandCost=usePricingCost?selectedPricingCost:manualCost;
   const grandNet=grandTotal-grandCost;
   const grandROI=grandCost>0?((grandTotal-grandCost)/grandCost)*100:0;
   const grandPayback=grandCost>0?grandCost/(grandTotal/12):0;
@@ -1712,21 +1755,21 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
       <div style={{padding:"18px 32px"}}>
         {/* Export buttons */}
         <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:16}}>
-          <button onClick={()=>generatePDF(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,ballparkEstimate,selectedBallparkCost)}
+          <button onClick={()=>generatePDF(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,pricing,usePricingCost,selectedPricingCost)}
             style={{background:B.green,color:"white",border:"none",padding:"10px 20px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:5}}>
             <span style={{fontSize:13}}>↓</span> PDF
           </button>
-          <button onClick={()=>generatePPTX(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,ballparkEstimate,selectedBallparkCost)}
+          <button onClick={()=>generatePPTX(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,pricing,usePricingCost,selectedPricingCost)}
             style={{background:B.greenDark,color:"white",border:"none",padding:"10px 20px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:5}}>
             <span style={{fontSize:13}}>↓</span> PowerPoint
           </button>
-          <button onClick={()=>generateExcel(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,ballparkEstimate,selectedBallparkCost)}
+          <button onClick={()=>generateExcel(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,pricing,usePricingCost,selectedPricingCost)}
             style={{background:B.darkGray,color:"white",border:"none",padding:"10px 20px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:5}}>
             <span style={{fontSize:13}}>↓</span> Excel
           </button>
         </div>
-        {/* Ballpark Cost Estimator */}
-        <BallparkCostPanel ballpark={ballpark} useBallparkCost={useBallparkCost} onToggle={onToggleBallpark} ballparkEstimate={ballparkEstimate} onEstimateChange={onEstimateChange}/>
+        {/* Credit Pricing Estimator */}
+        <CreditPricingPanel pricing={pricing} usePricingCost={usePricingCost} onToggle={onTogglePricing} pricingInputs={pricingInputs} onInputChange={onPricingInputChange}/>
 
         {/* Per-category breakdown table */}
         <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:16}}>
@@ -1810,7 +1853,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment{useBallparkCost?<span style={{color:B.amber}}> ({ballparkEstimate === "high" ? "high" : "low"} ballpark estimate, {ballpark.tierName} tier)</span>:null} — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.{useBallparkCost?<span style={{color:"#999"}}> Recommended Augment investment range: ${Math.round(ballpark.investmentLow).toLocaleString()}–${Math.round(ballpark.investmentHigh).toLocaleString()}/yr, including {formatCredits(ballpark.creditsLow)}–{formatCredits(ballpark.creditsHigh)} enterprise credits. This is an illustrative estimate, not a binding quote.</span>:null}
+            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment{usePricingCost?<span style={{color:B.amber}}> ({pricing.tierName} tier, credit-based pricing)</span>:null} — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.{usePricingCost?<span style={{color:"#999"}}> Total annual Augment investment: ${Math.round(pricing.totalAnnualFee).toLocaleString()}/yr (${(pricing.platformFee/1000).toFixed(0)}k platform + ${Math.round(pricing.annualCreditFee/1000).toLocaleString()}k credits). {formatCredits(pricing.totalCreditsPerMonth*12)} enterprise credits/yr. This is an illustrative estimate, not a binding quote.</span>:null}
           </p>
         </div>
       </div>
@@ -1848,8 +1891,8 @@ function ROICalculator(){
   const [editingName,setEditingName]=useState(false);
   const [enabled,setEnabled]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
   const [showPilot,setShowPilot]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
-  const [useBallparkCost,setUseBallparkCost]=useState(true);
-  const [ballparkEstimate,setBallparkEstimate]=useState("low"); // "low" or "high"
+  const [usePricingCost,setUsePricingCost]=useState(true);
+  const [pricingInputs,setPricingInputs]=useState({...CREDIT_PRICING_DEFAULTS});
 
   const [enabledCats,setEnabledCats]=useState({
     "code-review":["throughput"],
@@ -1949,28 +1992,16 @@ function ROICalculator(){
     setShowPilot(prev=>({...prev,[useCaseId]:!prev[useCaseId]}));
   },[]);
 
-  // Compute ballpark cost (always computed for display; toggle controls whether it's used)
+  // Compute credit pricing (always computed for display; toggle controls whether it's used in ROI)
   const totalDevs = extractTotalDevs(USE_CASES, enabled, enabledCats, catValues);
+  const pricing = computeCreditPricing({...pricingInputs, totalDevs: pricingInputs.totalDevs});
+  const selectedPricingCost = pricing.totalAnnualFee;
 
-  // First pass: compute total benefit without ballpark override (for ballpark estimation)
-  let rawTotalBenefit = 0;
-  USE_CASES.filter(p=>enabled[p.id]).forEach(useCase=>{
-    const cats=enabledCats[useCase.id]||[];
-    cats.forEach(catId=>{
-      const cat=useCase.evalCategories.find(c=>c.id===catId);
-      if(!cat) return;
-      const vals=catValues[useCase.id]?.[catId]||{};
-      const si=catScenarios[useCase.id]?.[catId]??1;
-      const pct=useCase.savingsRange[si];
-      const results=useCase.compute(vals,pct,catId);
-      rawTotalBenefit += results.totalBenefit;
-    });
-  });
+  const handlePricingInputChange = useCallback((key, val)=>{
+    setPricingInputs(prev=>({...prev,[key]:val}));
+  },[]);
 
-  const ballpark = computeBallparkCost(totalDevs, rawTotalBenefit);
-  const selectedBallparkCost = ballparkEstimate === "high" ? ballpark.investmentHigh : ballpark.investmentLow;
-
-  // Second pass: compute final results (with ballpark override if enabled)
+  // Compute final results (with credit pricing override if enabled)
   const allCatResults=[];
   USE_CASES.filter(p=>enabled[p.id]).forEach(useCase=>{
     const cats=enabledCats[useCase.id]||[];
@@ -1980,9 +2011,8 @@ function ROICalculator(){
       const vals=catValues[useCase.id]?.[catId]||{};
       const si=catScenarios[useCase.id]?.[catId]??1;
       const pct=useCase.savingsRange[si];
-      // When ballpark is enabled, override augmentCost with selected estimate
-      const effectiveVals = useBallparkCost
-        ? {...vals, augmentCost: selectedBallparkCost}
+      const effectiveVals = usePricingCost
+        ? {...vals, augmentCost: selectedPricingCost}
         : vals;
       const results=useCase.compute(effectiveVals,pct,catId);
       allCatResults.push({
@@ -1990,7 +2020,7 @@ function ROICalculator(){
         categoryLabel:cat.label,
         scenarioIdx:si,
         results,
-        augmentCost: useBallparkCost ? selectedBallparkCost : (vals.augmentCost||180000),
+        augmentCost: usePricingCost ? selectedPricingCost : (vals.augmentCost||180000),
         thresholds:thresholds[useCase.id]||{},
       });
     });
@@ -2097,7 +2127,7 @@ function ROICalculator(){
 
       {/* CONTENT */}
       {activeTab==="summary"?(
-        <SummaryTab allCatResults={allCatResults} customerName={customerName} enabled={enabled} enabledCats={enabledCats} catValues={catValues} catScenarios={catScenarios} thresholds={thresholds} showPilot={Object.values(showPilot).some(v=>v)} ballpark={ballpark} useBallparkCost={useBallparkCost} onToggleBallpark={()=>setUseBallparkCost(prev=>!prev)} ballparkEstimate={ballparkEstimate} onEstimateChange={setBallparkEstimate} selectedBallparkCost={selectedBallparkCost}/>
+        <SummaryTab allCatResults={allCatResults} customerName={customerName} enabled={enabled} enabledCats={enabledCats} catValues={catValues} catScenarios={catScenarios} thresholds={thresholds} showPilot={Object.values(showPilot).some(v=>v)} pricing={pricing} usePricingCost={usePricingCost} onTogglePricing={()=>setUsePricingCost(prev=>!prev)} pricingInputs={pricingInputs} onPricingInputChange={handlePricingInputChange} selectedPricingCost={selectedPricingCost}/>
       ):activeUseCase?(
         enabled[activeUseCase.id]?(
           <UseCaseTab
@@ -2112,7 +2142,7 @@ function ROICalculator(){
             onThresholdChange={handleThresholdChange}
             showPilot={showPilot[activeUseCase.id]??true}
             onTogglePilot={()=>handleTogglePilot(activeUseCase.id)}
-            platformCost={selectedBallparkCost}
+            platformCost={selectedPricingCost}
             hiddenInputs={hiddenInputs[activeUseCase.id]||{}}
             hiddenMetrics={hiddenMetrics[activeUseCase.id]||[]}
             onHideInput={(catId,key)=>handleHideInput(activeUseCase.id,catId,key)}

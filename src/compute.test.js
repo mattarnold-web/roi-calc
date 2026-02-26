@@ -1,4 +1,4 @@
-import { USE_CASES } from './App';
+import { USE_CASES, computeCreditPricing, CREDIT_PRICING_DEFAULTS, PLATFORM_TIERS } from './App';
 
 const findUseCase = (id) => USE_CASES.find(uc => uc.id === id);
 
@@ -221,6 +221,59 @@ describe('Compute results invariants', () => {
         expect(r.payback).toBeLessThan(24);
       });
     });
+  });
+});
+
+// ─── Credit Pricing compute ───
+
+describe('Credit Pricing compute', () => {
+  it('calculates defaults matching the reference pricing table', () => {
+    const r = computeCreditPricing(CREDIT_PRICING_DEFAULTS);
+    // 500 devs × 60% = 300 active
+    expect(r.activeDevs).toBe(300);
+    // Interactive: 300 × 100 × 500 = 15,000,000 credits/mo
+    expect(r.interactiveCreditsPerMonth).toBe(15000000);
+    // CR: 4000 × 1000 = 4,000,000 credits/mo
+    expect(r.crCreditsPerMonth).toBe(4000000);
+    // UT: 20000 × 250 = 5,000,000 credits/mo
+    expect(r.utCreditsPerMonth).toBe(5000000);
+    // Total: 24,000,000 credits/mo
+    expect(r.totalCreditsPerMonth).toBe(24000000);
+    // Monthly fee: 24M / 500 = $48,000
+    expect(r.monthlyCreditFee).toBe(48000);
+    // Annual credit fee: $576,000
+    expect(r.annualCreditFee).toBe(576000);
+    // Platform fee: Standard tier ($100k for ≤1000 devs)
+    expect(r.tierName).toBe("Standard");
+    expect(r.platformFee).toBe(100000);
+    // Total annual: $676,000
+    expect(r.totalAnnualFee).toBe(676000);
+  });
+
+  it('selects correct platform tier based on dev count', () => {
+    expect(computeCreditPricing({totalDevs:100}).tierName).toBe("Core");
+    expect(computeCreditPricing({totalDevs:100}).platformFee).toBe(50000);
+    expect(computeCreditPricing({totalDevs:500}).tierName).toBe("Standard");
+    expect(computeCreditPricing({totalDevs:500}).platformFee).toBe(100000);
+    expect(computeCreditPricing({totalDevs:2000}).tierName).toBe("Advanced");
+    expect(computeCreditPricing({totalDevs:2000}).platformFee).toBe(150000);
+  });
+
+  it('changing activeRatio scales interactive credits', () => {
+    const r100 = computeCreditPricing({activeRatio:100});
+    const r50 = computeCreditPricing({activeRatio:50});
+    expect(r100.interactiveCreditsPerMonth).toBe(r50.interactiveCreditsPerMonth * 2);
+  });
+
+  it('changing prsPerMonth scales CR credits', () => {
+    const base = computeCreditPricing({prsPerMonth:4000});
+    const doubled = computeCreditPricing({prsPerMonth:8000});
+    expect(doubled.crCreditsPerMonth).toBe(base.crCreditsPerMonth * 2);
+  });
+
+  it('interactive dollars per month = interactive credits / creditsPerDollar', () => {
+    const r = computeCreditPricing(CREDIT_PRICING_DEFAULTS);
+    expect(r.interactiveDollarsPerMonth).toBe(r.interactiveCreditsPerMonth / r.creditsPerDollar);
   });
 });
 
