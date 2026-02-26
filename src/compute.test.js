@@ -40,6 +40,20 @@ describe('Code Review compute', () => {
     expect(r.hoursRecovered).toBe(15 * 8 * 52 * 0.40);
   });
 
+  it('throughput: prsPerMonth slider scales time savings', () => {
+    const base = { devs: 50, prsPerMonth: 300, hoursPerWeek: 5, hourlyCost: 120, augmentCost: 180000 };
+    const rBase = uc.compute(base, 0.40, 'throughput');
+    // Double PRs → double savings
+    const doubled = { ...base, prsPerMonth: 600 };
+    const rDouble = uc.compute(doubled, 0.40, 'throughput');
+    expect(rDouble.timeSavings).toBe(rBase.timeSavings * 2);
+    expect(rDouble.hoursRecovered).toBe(rBase.hoursRecovered * 2);
+    // Half PRs → half savings
+    const halved = { ...base, prsPerMonth: 150 };
+    const rHalf = uc.compute(halved, 0.40, 'throughput');
+    expect(rHalf.timeSavings).toBe(rBase.timeSavings * 0.5);
+  });
+
   it('returns correct ROI formula', () => {
     const vals = { devs: 10, hoursPerWeek: 5, hourlyCost: 100, augmentCost: 50000 };
     const r = uc.compute(vals, 0.50, 'throughput');

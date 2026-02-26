@@ -57,6 +57,9 @@ export const USE_CASES = [
       let timeSavings=0, reworkSavings=0, incidentValue=v.incidentValue||0;
       if(catId==="capacity"){
         timeSavings = (v.seniorDevs||15)*(v.seniorHoursPerWeek||8)*52*(v.seniorHourlyCost||160)*pct;
+      } else if(catId==="throughput"){
+        const prFactor = (v.prsPerMonth||300)/300;
+        timeSavings = (v.devs||50)*(v.hoursPerWeek||5)*52*(v.hourlyCost||120)*pct*prFactor;
       } else {
         timeSavings = (v.devs||50)*(v.hoursPerWeek||5)*52*(v.hourlyCost||120)*pct;
       }
@@ -69,7 +72,9 @@ export const USE_CASES = [
       const payback=cost/(totalBenefit/12);
       const hoursRecovered = catId==="capacity"
         ? (v.seniorDevs||15)*(v.seniorHoursPerWeek||8)*52*pct
-        : (v.devs||50)*(v.hoursPerWeek||5)*52*pct;
+        : catId==="throughput"
+          ? (v.devs||50)*(v.hoursPerWeek||5)*52*pct*((v.prsPerMonth||300)/300)
+          : (v.devs||50)*(v.hoursPerWeek||5)*52*pct;
       return {timeSavings,reworkSavings,incidentValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080};
     },
     metrics:[
