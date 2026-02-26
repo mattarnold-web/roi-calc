@@ -943,11 +943,10 @@ function ThresholdMeter({threshold,value,onChange}){
 
 // ─── CATEGORY PANEL (one per enabled category) ───
 
-function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly,useBallparkCost,ballparkCost}){
+function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly,effectiveCost}){
   const pct=useCase.savingsRange[scenarioIdx];
-  const effectiveVals = useBallparkCost ? {...vals, augmentCost: ballparkCost} : vals;
+  const effectiveVals = {...vals, augmentCost: effectiveCost};
   const results=useCase.compute(effectiveVals,pct,cat.id);
-  const effectiveCost = useBallparkCost ? ballparkCost : (vals.augmentCost||180000);
   return(
     <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
       {/* Category header */}
@@ -962,11 +961,8 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
         {/* LEFT: inputs + scenario */}
         <div>
           <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Inputs</div>
-          {cat.inputs.map(inp=>(
-            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}
-              overrideValue={useBallparkCost && inp.key==="augmentCost" ? ballparkCost : undefined}
-              overrideLabel={useBallparkCost && inp.key==="augmentCost" ? "Ballpark" : undefined}
-            />
+          {cat.inputs.filter(inp=>inp.key!=="augmentCost").map(inp=>(
+            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}/>
           ))}
           {/* Scenario mini-selector */}
           <div style={{marginTop:8,padding:"10px 12px",background:B.offWhite,borderRadius:4}}>
@@ -1005,20 +1001,20 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
 
 // ─── USE CASE TAB (multi-category) ───
 
-function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot,useBallparkCost,ballparkCost}){
+function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot,platformCost}){
   // Compute results for each enabled category
   const catResults=enabledCats.map(catId=>{
     const cat=useCase.evalCategories.find(c=>c.id===catId);
     const vals=catValues[catId]||{};
     const si=catScenarios[catId]??1;
     const pct=useCase.savingsRange[si];
-    const effectiveVals = useBallparkCost ? {...vals, augmentCost: ballparkCost} : vals;
+    const effectiveVals = {...vals, augmentCost: platformCost};
     const results=useCase.compute(effectiveVals,pct,catId);
     return {cat,catId,vals,scenarioIdx:si,pct,results};
   });
   // Combined totals across all enabled categories
   const combinedBenefit=catResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const combinedCost=useBallparkCost?ballparkCost:Math.max(...catResults.map(r=>r.vals.augmentCost||180000),0);
+  const combinedCost=platformCost;
   const combinedROI=combinedCost>0?((combinedBenefit-combinedCost)/combinedCost)*100:0;
   const combinedHours=catResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
   const combinedFTE=combinedHours/2080;
@@ -1099,8 +1095,7 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
             setScenarioIdx={idx=>onScenarioChange(catId,idx)}
             onRemove={()=>onToggleCat(catId)}
             isOnly={enabledCats.length===1}
-            useBallparkCost={useBallparkCost}
-            ballparkCost={ballparkCost}
+            effectiveCost={combinedCost}
           />
         ))}
         {/* Combined Use Case Summary (when multiple categories) */}
@@ -1404,7 +1399,7 @@ function ROICalculator(){
   const [editingName,setEditingName]=useState(false);
   const [enabled,setEnabled]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
   const [showPilot,setShowPilot]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
-  const [useBallparkCost,setUseBallparkCost]=useState(false);
+  const [useBallparkCost,setUseBallparkCost]=useState(true);
   const [ballparkEstimate,setBallparkEstimate]=useState("low"); // "low" or "high"
 
   const [enabledCats,setEnabledCats]=useState({
@@ -1635,8 +1630,7 @@ function ROICalculator(){
             onThresholdChange={handleThresholdChange}
             showPilot={showPilot[activeUseCase.id]??true}
             onTogglePilot={()=>handleTogglePilot(activeUseCase.id)}
-            useBallparkCost={useBallparkCost}
-            ballparkCost={selectedBallparkCost}
+            platformCost={selectedBallparkCost}
           />
         ):(
           <DisabledTab useCase={activeUseCase} onEnable={()=>setEnabled(prev=>({...prev,[activeUseCase.id]:true}))}/>
