@@ -47,8 +47,6 @@ export const USE_CASES = [
           {key:"seniorDevs",label:"Senior engineers doing review",default:15,min:1,max:1000,step:1,unit:""},
           {key:"seniorHoursPerWeek",label:"Hours/week seniors spend on review",default:8,min:1,max:40,step:0.5,unit:"hrs"},
           {key:"seniorHourlyCost",label:"Senior engineer fully loaded cost",default:160,min:80,max:500,step:5,unit:"$/hr"},
-          {key:"hourlyCost",label:"Avg engineer cost (all reviewers)",default:120,min:50,max:400,step:5,unit:"$/hr"},
-          {key:"devs",label:"Total engineers in review",default:50,min:1,max:5000,step:1,unit:""},
           {key:"augmentCost",label:"Estimated annual Augment cost",default:180000,min:10000,max:5000000,step:5000,unit:"$"},
         ],
       },
@@ -120,6 +118,7 @@ export const USE_CASES = [
         desc:"Focus on coverage % gains and test quality",
         inputs:[
           {key:"devs",label:"Engineers writing/maintaining tests",default:80,min:1,max:5000,step:1,unit:""},
+          {key:"testTimePct",label:"% of week spent on unit tests",default:10,min:1,max:30,step:1,unit:"%"},
           {key:"currentCoverage",label:"Current avg unit test coverage",default:60,min:0,max:100,step:1,unit:"%"},
           {key:"criticalServices",label:"# of critical services in scope",default:5,min:1,max:100,step:1,unit:""},
           {key:"hourlyCost",label:"Fully loaded engineer cost",default:120,min:50,max:400,step:5,unit:"$/hr"},
@@ -148,16 +147,19 @@ export const USE_CASES = [
         timeSavings=0; incidentValue=0;
       } else {
         const weeklyHours=(v.devs||80)*40*((v.testTimePct||10)/100);
-        timeSavings=weeklyHours*52*(v.hourlyCost||120)*pct;
-        if(catId!=="coverage") ciSavings=(v.ciFailuresPerWeek||30)*52*1.5*(v.hourlyCost||120)*0.4;
+        const coverageFactor=catId==="coverage"
+          ? ((100-(v.currentCoverage||60))/40)*((v.criticalServices||5)/5) : 1;
+        timeSavings=weeklyHours*52*(v.hourlyCost||120)*pct*coverageFactor;
       }
       const totalBenefit=timeSavings+ciSavings+incidentValue;
       const cost=v.augmentCost||250000;
       const roi=((totalBenefit-cost)/cost)*100;
       const payback=cost/(totalBenefit/12);
+      const coverageFactorHrs=catId==="coverage"
+        ? ((100-(v.currentCoverage||60))/40)*((v.criticalServices||5)/5) : 1;
       const hoursRecovered=catId==="ci-stability"
         ? (v.ciFailuresPerWeek||30)*52*(v.mttrPerCIFailure||1.5)*(v.peoplePerCIFailure||1.5)*pct
-        : (v.devs||80)*40*((v.testTimePct||10)/100)*52*pct;
+        : (v.devs||80)*40*((v.testTimePct||10)/100)*52*pct*coverageFactorHrs;
       return {timeSavings,ciSavings,incidentValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080};
     },
     metrics:[
@@ -227,7 +229,7 @@ export const USE_CASES = [
         const currentCost=annual*(v.triageHoursPerFailure||1.5)*(v.triagePeople||2)*(v.hourlyCost||130);
         timeSavings=currentCost*pct;
       } else if(catId==="reliability"){
-        trunkLockSavings=(v.trunkLockHours||4)*52*(v.devsBlocked||50)*(v.hourlyCost||130)*0.5*0.6;
+        trunkLockSavings=(v.trunkLockHours||4)*52*(v.devsBlocked||50)*(v.hourlyCost||130)*pct*0.6;
         releaseValue=v.releaseDelayValue||200000;
       } else {
         const annual=(v.failuresPerWeek||50)*52;
@@ -240,7 +242,7 @@ export const USE_CASES = [
       const payback=cost/(totalBenefit/12);
       const hoursRecovered=catId==="triage"
         ?(v.failuresPerWeek||50)*52*(v.triageHoursPerFailure||1.5)*(v.triagePeople||2)*pct
-        :catId==="reliability"?(v.trunkLockHours||4)*52*(v.devsBlocked||50)*0.5*0.6
+        :catId==="reliability"?(v.trunkLockHours||4)*52*(v.devsBlocked||50)*pct*0.6
         :(v.failuresPerWeek||50)*52*(v.mttrHours||3)*(v.peoplePerFailure||2)*pct;
       const newMttr=catId==="mttr"?(v.mttrHours||3)*(1-pct):null;
       return {timeSavings,trunkLockSavings,releaseValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080,newMttr};
@@ -349,7 +351,7 @@ function loadJsPDF() {
   });
 }
 
-async function generatePDF(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot) {
+async function generatePDF(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, ballpark, useBallparkCost, ballparkEstimate, selectedBallparkCost) {
   const lib = await loadJsPDF();
   const doc = new lib.jsPDF({ orientation:"landscape", unit:"pt", format:"letter" });
   const W = doc.internal.pageSize.getWidth();
@@ -379,7 +381,8 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     useCaseMap[r.useCase.id].maxCost = Math.max(useCaseMap[r.useCase.id].maxCost, r.augmentCost);
   });
   const grandTotal = allCatResults.reduce((s,r) => s+r.results.totalBenefit, 0);
-  const grandCost = Object.values(useCaseMap).reduce((s,p) => s+p.maxCost, 0);
+  const manualCostPDF = Object.values(useCaseMap).reduce((s,p) => s+p.maxCost, 0);
+  const grandCost = useBallparkCost ? selectedBallparkCost : manualCostPDF;
   const grandNet = grandTotal - grandCost;
   const grandROI = grandCost > 0 ? ((grandTotal-grandCost)/grandCost)*100 : 0;
   const grandPayback = grandCost > 0 ? grandCost/(grandTotal/12) : 0;
@@ -502,6 +505,27 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     const lines = doc.splitTextToSize(narrative, W-margin*2-16);
     doc.setFontSize(8); doc.setTextColor(200,200,200); doc.setFont("helvetica","normal");
     doc.text(lines, margin+4, sy+24);
+  }
+
+  // Ballpark Cost Estimator section (if enabled)
+  if(useBallparkCost && ballpark && sy < H-100) {
+    const estLabel = ballparkEstimate === "high" ? "High" : "Low";
+    sy += 16;
+    rect(margin-4, sy-4, W-margin*2+8, 80, greenBg);
+    doc.setDrawColor(...green); doc.setLineWidth(1.5); doc.rect(margin-4, sy-4, W-margin*2+8, 80, "S");
+    txt("BALLPARK AUGMENT COST ESTIMATOR ("+estLabel+" Estimate)", margin+4, sy+10, {size:7, color:green, bold:true});
+    // Three info blocks
+    const bw = (W - margin*2 - 24) / 3;
+    [{l:"Platform Tier",v:ballpark.tierName+" ($"+(ballpark.platformFee/1000)+"k/yr)",s:"Up to "+ballpark.maxDevs+" devs"},
+     {l:"Investment Range",v:"$"+Math.round(ballpark.investmentLow/1000)+"k – $"+Math.round(ballpark.investmentHigh/1000)+"k/yr",s:"Platform + credits"},
+     {l:"Selected for ROI ("+estLabel+")",v:"$"+Math.round(selectedBallparkCost).toLocaleString()+"/yr",s:formatCredits(ballparkEstimate==="high"?ballpark.creditsHigh:ballpark.creditsLow)+" enterprise credits"},
+    ].forEach((b,i) => {
+      const bx = margin + 4 + i*(bw+12);
+      txt(b.l, bx, sy+26, {size:6, color:green, bold:true});
+      txt(b.v, bx, sy+40, {size:10, color:black, bold:true});
+      txt(b.s, bx, sy+52, {size:6, color:gray});
+    });
+    txt("* This is an illustrative estimate, not a binding quote. Contact your Augment account team for a formal proposal.", margin+4, sy+68, {size:6, color:gray});
   }
 
   // Footer
@@ -636,21 +660,228 @@ export const fmt=(val,format)=>{
 
 const SL=["Conservative","Midpoint","Optimistic"];
 
-function Slider({input,value,onChange}){
-  const pct=((value-input.min)/(input.max-input.min))*100;
-  const dv=input.unit==="$"?"$"+value.toLocaleString():input.unit==="%"?value+"%":input.unit==="$/hr"?"$"+value+"/hr":input.unit==="hrs"?value+" hrs":input.unit==="wks"?value+" wks":value.toLocaleString();
+// ─── BALLPARK COST ESTIMATOR ───
+
+export const PLATFORM_TIERS = [
+  { name:"Core", fee:50000, maxDevs:200 },
+  { name:"Standard", fee:100000, maxDevs:1000 },
+  { name:"Advanced", fee:150000, maxDevs:Infinity },
+];
+
+export function extractTotalDevs(useCases, enabled, enabledCats, catValues) {
+  let maxDevs = 0;
+  useCases.filter(p => enabled[p.id]).forEach(useCase => {
+    const cats = enabledCats[useCase.id] || [];
+    cats.forEach(catId => {
+      const cat = useCase.evalCategories.find(c => c.id === catId);
+      if (!cat) return;
+      const vals = catValues[useCase.id]?.[catId] || {};
+      ["devs","seniorDevs"].forEach(field => {
+        const inp = cat.inputs.find(i => i.key === field);
+        if (inp) maxDevs = Math.max(maxDevs, vals[field] ?? inp.default);
+      });
+    });
+  });
+  return maxDevs || 50;
+}
+
+export function computeBallparkCost(totalDevs, totalBenefit) {
+  // Select platform tier based on developer count
+  const tier = PLATFORM_TIERS.find(t => totalDevs <= t.maxDevs) || PLATFORM_TIERS[2];
+
+  // Investment range targeting 2–4× ROI multiple (benefit / cost)
+  // 4× ROI → cost = benefit / 4 (low end)
+  // 2× ROI → cost = benefit / 2 (high end)
+  const rawLow = totalBenefit / 4;
+  const rawHigh = totalBenefit / 2;
+
+  // Floor at platform fee (minimum deal size)
+  const investmentLow = Math.max(tier.fee, rawLow);
+  const investmentHigh = Math.max(tier.fee, rawHigh);
+  const midpointInvestment = (investmentLow + investmentHigh) / 2;
+
+  // Credit spend = total investment minus platform fee
+  const creditSpendLow = Math.max(0, investmentLow - tier.fee);
+  const creditSpendHigh = Math.max(0, investmentHigh - tier.fee);
+
+  // $1 = 500 enterprise credits
+  const creditsLow = creditSpendLow * 500;
+  const creditsHigh = creditSpendHigh * 500;
+
+  return {
+    tierName: tier.name,
+    platformFee: tier.fee,
+    maxDevs: tier.maxDevs === Infinity ? "Unlimited" : tier.maxDevs,
+    totalDevs,
+    investmentLow,
+    investmentHigh,
+    midpointInvestment,
+    creditSpendLow,
+    creditSpendHigh,
+    creditsLow,
+    creditsHigh,
+  };
+}
+
+function formatCredits(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + "K";
+  return String(Math.round(n));
+}
+
+function BallparkCostPanel({ ballpark, useBallparkCost, onToggle, ballparkEstimate, onEstimateChange }) {
+  const selectedCost = ballparkEstimate === "high" ? ballpark.investmentHigh : ballpark.investmentLow;
+  const selectedCreditSpend = ballparkEstimate === "high" ? ballpark.creditSpendHigh : ballpark.creditSpendLow;
+
+  return (
+    <div style={{background:B.white,border:`2px solid ${useBallparkCost?B.green:"#E8E8E8"}`,borderTop:`3px solid ${useBallparkCost?B.green:B.amber}`,borderRadius:4,padding:"16px 18px",marginBottom:16,transition:"border-color 0.2s"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{fontSize:9,color:useBallparkCost?B.green:B.amber,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Ballpark Augment Cost Estimator</div>
+          {/* Toggle switch */}
+          <button onClick={onToggle} style={{
+            display:"inline-flex",alignItems:"center",gap:6,
+            background:useBallparkCost?B.greenBg:B.offWhite,
+            border:`1px solid ${useBallparkCost?B.green:B.disabledGray}`,
+            borderRadius:12,padding:"3px 10px",cursor:"pointer",
+            fontSize:8,fontWeight:600,
+            color:useBallparkCost?B.greenDark:B.gray,
+            transition:"all 0.15s",
+          }}>
+            <span style={{
+              display:"inline-block",width:20,height:12,borderRadius:6,
+              background:useBallparkCost?B.green:B.disabledGray,
+              position:"relative",transition:"background 0.15s",
+            }}>
+              <span style={{
+                position:"absolute",top:2,left:useBallparkCost?10:2,
+                width:8,height:8,borderRadius:4,background:B.white,
+                transition:"left 0.15s",boxShadow:"0 1px 2px rgba(0,0,0,0.2)",
+              }}/>
+            </span>
+            {useBallparkCost?"Included in ROI":"Excluded from ROI"}
+          </button>
+        </div>
+        <div style={{fontSize:9,color:B.gray}}>Based on {ballpark.totalDevs} developer{ballpark.totalDevs!==1?"s":""} in scope</div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+        {/* Platform Tier */}
+        <div style={{background:B.offWhite,borderRadius:4,padding:"12px 14px",borderLeft:`3px solid ${B.green}`}}>
+          <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500,marginBottom:4}}>Platform Tier</div>
+          <div style={{fontSize:18,fontWeight:700,color:B.greenDark,lineHeight:1}}>{ballpark.tierName}</div>
+          <div style={{fontSize:9,color:B.gray,marginTop:4}}>Up to {ballpark.maxDevs} devs · ${(ballpark.platformFee/1000).toFixed(0)}k/yr</div>
+        </div>
+        {/* Recommended Investment Range */}
+        <div style={{background:B.offWhite,borderRadius:4,padding:"12px 14px",borderLeft:`3px solid ${B.green}`}}>
+          <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:700,marginBottom:4}}>Recommended Investment</div>
+          <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>
+            ${Math.round(ballpark.investmentLow/1000).toLocaleString()}k – ${Math.round(ballpark.investmentHigh/1000).toLocaleString()}k
+          </div>
+          <div style={{fontSize:9,color:B.gray,marginTop:4}}>per year (platform + credits)</div>
+        </div>
+        {/* Credit Pool Range */}
+        <div style={{background:B.offWhite,borderRadius:4,padding:"12px 14px",borderLeft:`3px solid ${B.green}`}}>
+          <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500,marginBottom:4}}>Estimated Credit Pool</div>
+          <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>
+            {formatCredits(ballpark.creditsLow)} – {formatCredits(ballpark.creditsHigh)}
+          </div>
+          <div style={{fontSize:9,color:B.gray,marginTop:4}}>enterprise credits/yr ($1 = 500 credits)</div>
+        </div>
+      </div>
+
+      {/* Low / High estimate selector */}
+      {useBallparkCost && (
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Select Estimate for ROI Calculation</div>
+          <div style={{display:"flex",gap:6}}>
+            {[
+              {key:"low",label:"Low Estimate",desc:"Higher ROI (~4x target)",value:ballpark.investmentLow,credits:ballpark.creditsLow},
+              {key:"high",label:"High Estimate",desc:"Conservative ROI (~2x target)",value:ballpark.investmentHigh,credits:ballpark.creditsHigh},
+            ].map(opt=>(
+              <button key={opt.key} onClick={()=>onEstimateChange(opt.key)} style={{
+                flex:1,padding:"10px 14px",borderRadius:4,cursor:"pointer",
+                border:`2px solid ${ballparkEstimate===opt.key?B.green:"#E0E0E0"}`,
+                background:ballparkEstimate===opt.key?B.greenBg:B.white,
+                textAlign:"left",transition:"all 0.15s",
+              }}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                  <span style={{fontSize:9,fontWeight:700,color:ballparkEstimate===opt.key?B.greenDark:B.darkGray,textTransform:"uppercase",letterSpacing:"0.04em"}}>{opt.label}</span>
+                  <span style={{fontSize:8,color:ballparkEstimate===opt.key?B.green:B.gray,fontWeight:600}}>{opt.desc}</span>
+                </div>
+                <div style={{fontSize:16,fontWeight:700,color:ballparkEstimate===opt.key?B.green:B.black,lineHeight:1}}>
+                  ${Math.round(opt.value).toLocaleString()}<span style={{fontSize:10,fontWeight:500,color:B.gray}}>/yr</span>
+                </div>
+                <div style={{fontSize:8,color:B.gray,marginTop:3}}>{formatCredits(opt.credits)} credits · Platform: ${(ballpark.platformFee/1000).toFixed(0)}k + Credits: ${Math.round((opt.value-ballpark.platformFee)/1000).toLocaleString()}k</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Breakdown bar for selected estimate */}
+      {useBallparkCost && (
+        <div style={{marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <span style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em"}}>Investment Breakdown ({ballparkEstimate === "high" ? "High" : "Low"} Estimate)</span>
+            <span style={{fontSize:9,fontWeight:700,color:B.darkGray}}>${Math.round(selectedCost).toLocaleString()}/yr</span>
+          </div>
+          <div style={{display:"flex",height:6,borderRadius:3,overflow:"hidden",background:B.offWhite}}>
+            {selectedCost > 0 && (
+              <>
+                <div style={{width:(ballpark.platformFee/selectedCost*100)+"%",background:B.green,borderRadius:"3px 0 0 3px"}} title={"Platform fee: $"+ballpark.platformFee.toLocaleString()}/>
+                <div style={{width:(selectedCreditSpend/selectedCost*100)+"%",background:B.greenLight}} title={"Credits: $"+Math.round(selectedCreditSpend).toLocaleString()}/>
+              </>
+            )}
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+            <span style={{fontSize:8,color:B.green,fontWeight:600}}>Platform: ${(ballpark.platformFee/1000).toFixed(0)}k</span>
+            <span style={{fontSize:8,color:B.greenLight,fontWeight:600}}>Credits: ${Math.round(selectedCreditSpend/1000).toLocaleString()}k</span>
+          </div>
+        </div>
+      )}
+
+      {!useBallparkCost && (
+        <div style={{background:B.amberBg,border:`1px solid ${B.amber}`,borderRadius:4,padding:"8px 12px",fontSize:9,color:B.darkGray,lineHeight:1.6}}>
+          Ballpark cost is currently <strong>excluded</strong> from ROI calculations. The per-category manual cost sliders are being used instead. Toggle on to use this estimate.
+        </div>
+      )}
+      {useBallparkCost && (
+        <div style={{background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:4,padding:"8px 12px",fontSize:9,color:B.greenDark,lineHeight:1.6}}>
+          Using <strong>{ballparkEstimate === "high" ? "high" : "low"} estimate of ${Math.round(selectedCost).toLocaleString()}/yr</strong> as platform cost in all ROI calculations. Per-category cost sliders are overridden.
+        </div>
+      )}
+
+      {/* Disclaimer */}
+      <div style={{marginTop:10,padding:"8px 12px",background:"#FAFAFA",border:"1px solid #E8E8E8",borderRadius:4,fontSize:8,color:B.gray,lineHeight:1.7,fontStyle:"italic"}}>
+        This is an illustrative estimate only, not a binding quote. Actual Augment pricing depends on contract terms, negotiated discounts, promotional credits, and usage patterns. Contact your Augment account team for a formal proposal.
+      </div>
+    </div>
+  );
+}
+
+function Slider({input,value,onChange,overrideValue,overrideLabel}){
+  const displayValue = overrideValue != null ? overrideValue : value;
+  const clampedValue = Math.min(Math.max(displayValue, input.min), input.max);
+  const pct=((clampedValue-input.min)/(input.max-input.min))*100;
+  const isOverridden = overrideValue != null;
+  const dv=input.unit==="$"?"$"+Math.round(displayValue).toLocaleString():input.unit==="%"?displayValue+"%":input.unit==="$/hr"?"$"+displayValue+"/hr":input.unit==="hrs"?displayValue+" hrs":input.unit==="wks"?displayValue+" wks":Math.round(displayValue).toLocaleString();
   return(
-    <div style={{marginBottom:14}}>
+    <div style={{marginBottom:14,opacity:isOverridden?0.85:1}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-        <label style={{fontSize:10,color:B.gray,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:500}}>{input.label}</label>
+        <label style={{fontSize:10,color:isOverridden?B.greenDark:B.gray,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:isOverridden?700:500}}>
+          {input.label}{isOverridden&&overrideLabel?<span style={{fontSize:8,color:B.green,marginLeft:6,fontWeight:600}}>({overrideLabel})</span>:null}
+        </label>
         <span style={{fontSize:13,fontWeight:700,color:B.green}}>{dv}</span>
       </div>
       <div style={{position:"relative",height:4}}>
-        <div style={{position:"absolute",inset:0,background:B.offWhite,borderRadius:2}}/>
-        <div style={{position:"absolute",top:0,left:0,bottom:0,width:pct+"%",background:B.green,borderRadius:2,transition:"width 0.08s"}}/>
-        <input type="range" min={input.min} max={input.max} step={input.step} value={value}
-          onChange={e=>onChange(input.key,parseFloat(e.target.value))}
-          style={{position:"absolute",top:-8,left:0,width:"100%",height:20,WebkitAppearance:"none",appearance:"none",background:"transparent",outline:"none",cursor:"pointer",margin:0}}/>
+        <div style={{position:"absolute",inset:0,background:isOverridden?"#D6EDE3":B.offWhite,borderRadius:2}}/>
+        <div style={{position:"absolute",top:0,left:0,bottom:0,width:pct+"%",background:B.green,borderRadius:2,transition:"width 0.3s ease"}}/>
+        <input type="range" min={input.min} max={input.max} step={input.step} value={clampedValue}
+          onChange={isOverridden?undefined:e=>onChange(input.key,parseFloat(e.target.value))}
+          readOnly={isOverridden}
+          style={{position:"absolute",top:-8,left:0,width:"100%",height:20,WebkitAppearance:"none",appearance:"none",background:"transparent",outline:"none",cursor:isOverridden?"default":"pointer",margin:0,pointerEvents:isOverridden?"none":"auto"}}/>
       </div>
     </div>
   );
@@ -712,9 +943,11 @@ function ThresholdMeter({threshold,value,onChange}){
 
 // ─── CATEGORY PANEL (one per enabled category) ───
 
-function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly}){
+function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly,useBallparkCost,ballparkCost}){
   const pct=useCase.savingsRange[scenarioIdx];
-  const results=useCase.compute(vals,pct,cat.id);
+  const effectiveVals = useBallparkCost ? {...vals, augmentCost: ballparkCost} : vals;
+  const results=useCase.compute(effectiveVals,pct,cat.id);
+  const effectiveCost = useBallparkCost ? ballparkCost : (vals.augmentCost||180000);
   return(
     <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
       {/* Category header */}
@@ -730,7 +963,10 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
         <div>
           <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Inputs</div>
           {cat.inputs.map(inp=>(
-            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}/>
+            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}
+              overrideValue={useBallparkCost && inp.key==="augmentCost" ? ballparkCost : undefined}
+              overrideLabel={useBallparkCost && inp.key==="augmentCost" ? "Ballpark" : undefined}
+            />
           ))}
           {/* Scenario mini-selector */}
           <div style={{marginTop:8,padding:"10px 12px",background:B.offWhite,borderRadius:4}}>
@@ -757,9 +993,9 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {useCase.metrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]}/>)}
           </div>
-          <div style={{marginTop:10,padding:"8px 10px",background:results.totalBenefit>(vals.augmentCost||180000)?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>(vals.augmentCost||180000)?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{marginTop:10,padding:"8px 10px",background:results.totalBenefit>effectiveCost?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>effectiveCost?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase"}}>Net Benefit</span>
-            <span style={{fontSize:14,fontWeight:700,color:results.totalBenefit>(vals.augmentCost||180000)?B.greenDark:B.red}}>${Math.round(results.totalBenefit-(vals.augmentCost||180000)).toLocaleString()}</span>
+            <span style={{fontSize:14,fontWeight:700,color:results.totalBenefit>effectiveCost?B.greenDark:B.red}}>${Math.round(results.totalBenefit-effectiveCost).toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -769,19 +1005,20 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
 
 // ─── USE CASE TAB (multi-category) ───
 
-function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot}){
+function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot,useBallparkCost,ballparkCost}){
   // Compute results for each enabled category
   const catResults=enabledCats.map(catId=>{
     const cat=useCase.evalCategories.find(c=>c.id===catId);
     const vals=catValues[catId]||{};
     const si=catScenarios[catId]??1;
     const pct=useCase.savingsRange[si];
-    const results=useCase.compute(vals,pct,catId);
+    const effectiveVals = useBallparkCost ? {...vals, augmentCost: ballparkCost} : vals;
+    const results=useCase.compute(effectiveVals,pct,catId);
     return {cat,catId,vals,scenarioIdx:si,pct,results};
   });
   // Combined totals across all enabled categories
   const combinedBenefit=catResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const combinedCost=Math.max(...catResults.map(r=>r.vals.augmentCost||180000),0);
+  const combinedCost=useBallparkCost?ballparkCost:Math.max(...catResults.map(r=>r.vals.augmentCost||180000),0);
   const combinedROI=combinedCost>0?((combinedBenefit-combinedCost)/combinedCost)*100:0;
   const combinedHours=catResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
   const combinedFTE=combinedHours/2080;
@@ -862,6 +1099,8 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
             setScenarioIdx={idx=>onScenarioChange(catId,idx)}
             onRemove={()=>onToggleCat(catId)}
             isOnly={enabledCats.length===1}
+            useBallparkCost={useBallparkCost}
+            ballparkCost={ballparkCost}
           />
         ))}
         {/* Combined Use Case Summary (when multiple categories) */}
@@ -992,7 +1231,7 @@ function DisabledTab({useCase,onEnable}){
 
 // ─── SUMMARY TAB (per-category breakdown) ───
 
-function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot}){
+function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,onToggleBallpark,ballparkEstimate,onEstimateChange,selectedBallparkCost}){
   if(allCatResults.length===0) return(
     <div style={{padding:"60px 32px",textAlign:"center"}}>
       <div style={{fontSize:14,color:B.gray,marginBottom:8}}>No use cases are currently included.</div>
@@ -1006,7 +1245,8 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
     useCaseMap[r.useCase.id].maxCost=Math.max(useCaseMap[r.useCase.id].maxCost,r.augmentCost);
   });
   const grandTotal=allCatResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const grandCost=Object.values(useCaseMap).reduce((s,p)=>s+p.maxCost,0);
+  const manualCost=Object.values(useCaseMap).reduce((s,p)=>s+p.maxCost,0);
+  const grandCost=useBallparkCost?selectedBallparkCost:manualCost;
   const grandNet=grandTotal-grandCost;
   const grandROI=grandCost>0?((grandTotal-grandCost)/grandCost)*100:0;
   const grandPayback=grandCost>0?grandCost/(grandTotal/12):0;
@@ -1036,11 +1276,14 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
       <div style={{padding:"18px 32px"}}>
         {/* Export PDF button */}
         <div style={{textAlign:"right",marginBottom:16}}>
-          <button onClick={()=>generatePDF(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot)}
+          <button onClick={()=>generatePDF(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,ballparkEstimate,selectedBallparkCost)}
             style={{background:B.green,color:"white",border:"none",padding:"10px 24px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:6}}>
             <span style={{fontSize:14}}>↓</span> Export to PDF
           </button>
         </div>
+        {/* Ballpark Cost Estimator */}
+        <BallparkCostPanel ballpark={ballpark} useBallparkCost={useBallparkCost} onToggle={onToggleBallpark} ballparkEstimate={ballparkEstimate} onEstimateChange={onEstimateChange}/>
+
         {/* Per-category breakdown table */}
         <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:16}}>
           <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Per-Category Breakdown</div>
@@ -1123,7 +1366,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.
+            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment{useBallparkCost?<span style={{color:B.amber}}> ({ballparkEstimate === "high" ? "high" : "low"} ballpark estimate, {ballpark.tierName} tier)</span>:null} — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.{useBallparkCost?<span style={{color:"#999"}}> Recommended Augment investment range: ${Math.round(ballpark.investmentLow).toLocaleString()}–${Math.round(ballpark.investmentHigh).toLocaleString()}/yr, including {formatCredits(ballpark.creditsLow)}–{formatCredits(ballpark.creditsHigh)} enterprise credits. This is an illustrative estimate, not a binding quote.</span>:null}
           </p>
         </div>
       </div>
@@ -1161,6 +1404,8 @@ function ROICalculator(){
   const [editingName,setEditingName]=useState(false);
   const [enabled,setEnabled]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
   const [showPilot,setShowPilot]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
+  const [useBallparkCost,setUseBallparkCost]=useState(false);
+  const [ballparkEstimate,setBallparkEstimate]=useState("low"); // "low" or "high"
 
   const [enabledCats,setEnabledCats]=useState({
     "code-review":["throughput"],
@@ -1227,7 +1472,11 @@ function ROICalculator(){
     setShowPilot(prev=>({...prev,[useCaseId]:!prev[useCaseId]}));
   },[]);
 
-  const allCatResults=[];
+  // Compute ballpark cost (always computed for display; toggle controls whether it's used)
+  const totalDevs = extractTotalDevs(USE_CASES, enabled, enabledCats, catValues);
+
+  // First pass: compute total benefit without ballpark override (for ballpark estimation)
+  let rawTotalBenefit = 0;
   USE_CASES.filter(p=>enabled[p.id]).forEach(useCase=>{
     const cats=enabledCats[useCase.id]||[];
     cats.forEach(catId=>{
@@ -1237,12 +1486,34 @@ function ROICalculator(){
       const si=catScenarios[useCase.id]?.[catId]??1;
       const pct=useCase.savingsRange[si];
       const results=useCase.compute(vals,pct,catId);
+      rawTotalBenefit += results.totalBenefit;
+    });
+  });
+
+  const ballpark = computeBallparkCost(totalDevs, rawTotalBenefit);
+  const selectedBallparkCost = ballparkEstimate === "high" ? ballpark.investmentHigh : ballpark.investmentLow;
+
+  // Second pass: compute final results (with ballpark override if enabled)
+  const allCatResults=[];
+  USE_CASES.filter(p=>enabled[p.id]).forEach(useCase=>{
+    const cats=enabledCats[useCase.id]||[];
+    cats.forEach(catId=>{
+      const cat=useCase.evalCategories.find(c=>c.id===catId);
+      if(!cat) return;
+      const vals=catValues[useCase.id]?.[catId]||{};
+      const si=catScenarios[useCase.id]?.[catId]??1;
+      const pct=useCase.savingsRange[si];
+      // When ballpark is enabled, override augmentCost with selected estimate
+      const effectiveVals = useBallparkCost
+        ? {...vals, augmentCost: selectedBallparkCost}
+        : vals;
+      const results=useCase.compute(effectiveVals,pct,catId);
       allCatResults.push({
         useCase,catId,cat,
         categoryLabel:cat.label,
         scenarioIdx:si,
         results,
-        augmentCost:vals.augmentCost||180000,
+        augmentCost: useBallparkCost ? selectedBallparkCost : (vals.augmentCost||180000),
         thresholds:thresholds[useCase.id]||{},
       });
     });
@@ -1349,7 +1620,7 @@ function ROICalculator(){
 
       {/* CONTENT */}
       {activeTab==="summary"?(
-        <SummaryTab allCatResults={allCatResults} customerName={customerName} enabled={enabled} enabledCats={enabledCats} catValues={catValues} catScenarios={catScenarios} thresholds={thresholds} showPilot={Object.values(showPilot).some(v=>v)}/>
+        <SummaryTab allCatResults={allCatResults} customerName={customerName} enabled={enabled} enabledCats={enabledCats} catValues={catValues} catScenarios={catScenarios} thresholds={thresholds} showPilot={Object.values(showPilot).some(v=>v)} ballpark={ballpark} useBallparkCost={useBallparkCost} onToggleBallpark={()=>setUseBallparkCost(prev=>!prev)} ballparkEstimate={ballparkEstimate} onEstimateChange={setBallparkEstimate} selectedBallparkCost={selectedBallparkCost}/>
       ):activeUseCase?(
         enabled[activeUseCase.id]?(
           <UseCaseTab
@@ -1364,6 +1635,8 @@ function ROICalculator(){
             onThresholdChange={handleThresholdChange}
             showPilot={showPilot[activeUseCase.id]??true}
             onTogglePilot={()=>handleTogglePilot(activeUseCase.id)}
+            useBallparkCost={useBallparkCost}
+            ballparkCost={selectedBallparkCost}
           />
         ):(
           <DisabledTab useCase={activeUseCase} onEnable={()=>setEnabled(prev=>({...prev,[activeUseCase.id]:true}))}/>
