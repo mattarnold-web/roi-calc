@@ -1390,11 +1390,12 @@ export default function App(){
 
 function AppContent(){
   const {user,loading}=useAuth();
-  if(loading) return(
+  const authDisabled = !process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  if(!authDisabled && loading) return(
     <div style={{minHeight:"100vh",background:B.black,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <span style={{color:B.gray,fontSize:12,fontFamily:"'Roboto Mono',monospace"}}>Loading…</span>
     </div>
   );
-  if(!user) return <LoginScreen/>;
+  if(!authDisabled && !user) return <LoginScreen/>;
   return <ROICalculator/>;
 }

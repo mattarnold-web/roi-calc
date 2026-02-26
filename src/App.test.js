@@ -168,6 +168,13 @@ describe('Summary tab', () => {
 });
 
 describe('Auth integration', () => {
+  const origClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  beforeAll(() => { process.env.REACT_APP_GOOGLE_CLIENT_ID = 'test-client-id'; });
+  afterAll(() => {
+    if (origClientId === undefined) delete process.env.REACT_APP_GOOGLE_CLIENT_ID;
+    else process.env.REACT_APP_GOOGLE_CLIENT_ID = origClientId;
+  });
+
   it('shows user name in header when authenticated', () => {
     render(<App />);
     expect(screen.getByText('Test User')).toBeInTheDocument();
