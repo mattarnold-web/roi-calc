@@ -1333,34 +1333,39 @@ function Slider({input,value,onChange,overrideValue,overrideLabel,onHide}){
 function MetricCard({metric,value,onHide}){
   const [hovered,setHovered]=useState(false);
   const f=fmt(value,metric.format);
-  const hideBtn=onHide?(
-    <button onClick={onHide} title="Remove this metric"
-      onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
-      style={{position:"absolute",top:6,right:6,
-        background:hovered?B.red:"#E8E8E8",
-        border:"none",borderRadius:"50%",
-        width:18,height:18,
-        display:"flex",alignItems:"center",justifyContent:"center",
-        cursor:"pointer",color:hovered?B.white:B.gray,
-        fontSize:12,fontWeight:700,lineHeight:1,
-        transition:"all 0.15s",
-      }}>×</button>
-  ):null;
   if(metric.highlight){
     const neg=metric.format==="percent"&&value<0;
     return(
-      <div style={{position:"relative",background:neg?B.redBg:B.greenBg,border:`2px solid ${neg?B.red:B.green}`,borderRadius:4,padding:"12px 14px"}}>
-        {hideBtn}
-        <div style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,marginBottom:4}}>{metric.label}</div>
-        <div style={{fontSize:20,fontWeight:700,color:neg?B.red:B.greenDark,lineHeight:1}}>{f}</div>
+      <div style={{position:"relative",background:neg?B.redBg:B.greenBg,border:`2px solid ${neg?B.red:B.green}`,borderRadius:4,padding:"10px 14px 8px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,marginBottom:4}}>{metric.label}</div>
+            <div style={{fontSize:20,fontWeight:700,color:neg?B.red:B.greenDark,lineHeight:1}}>{f}</div>
+          </div>
+          {onHide&&<button onClick={onHide} title="Remove this metric"
+            onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
+            style={{background:hovered?"#e53e3e":"#ccc",border:"none",borderRadius:"50%",
+              width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",
+              cursor:"pointer",color:hovered?"#fff":"#555",fontSize:13,fontWeight:700,
+              lineHeight:1,flexShrink:0,marginLeft:6}}>×</button>}
+        </div>
       </div>
     );
   }
   return(
-    <div style={{position:"relative",background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"10px 12px"}}>
-      {hideBtn}
-      <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:500,marginBottom:3}}>{metric.label}</div>
-      <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>{f}</div>
+    <div style={{background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"8px 12px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div>
+          <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:500,marginBottom:3}}>{metric.label}</div>
+          <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>{f}</div>
+        </div>
+        {onHide&&<button onClick={onHide} title="Remove this metric"
+          onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
+          style={{background:hovered?"#e53e3e":"#ccc",border:"none",borderRadius:"50%",
+            width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",
+            cursor:"pointer",color:hovered?"#fff":"#555",fontSize:13,fontWeight:700,
+            lineHeight:1,flexShrink:0,marginLeft:6}}>×</button>}
+      </div>
     </div>
   );
 }
