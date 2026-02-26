@@ -1332,7 +1332,7 @@ function Slider({input,value,onChange,overrideValue,overrideLabel,onHide}){
 
 function MetricCard({metric,value,onHide}){
   const f=fmt(value,metric.format);
-  const hideBtn=onHide?<button onClick={onHide} title="Hide this metric" style={{position:"absolute",top:4,right:6,background:"none",border:"none",cursor:"pointer",color:B.gray,fontSize:10,padding:0,lineHeight:1,opacity:0.4}}>×</button>:null;
+  const hideBtn=onHide?<button onClick={onHide} title="Hide this metric" style={{position:"absolute",top:4,right:6,background:B.offWhite,border:`1px solid #E0E0E0`,borderRadius:3,cursor:"pointer",color:B.gray,fontSize:10,padding:"1px 4px",lineHeight:1,opacity:0.7,transition:"opacity 0.15s"}}>×</button>:null;
   if(metric.highlight){
     const neg=metric.format==="percent"&&value<0;
     return(
