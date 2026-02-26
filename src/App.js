@@ -22,7 +22,7 @@ export const USE_CASES = [
         desc:"Focus on PR volume, cycle time, and merge velocity",
         inputs:[
           {key:"devs",label:"Engineers in review",default:50,min:1,max:5000,step:1,unit:""},
-          {key:"prsPerMonth",label:"PRs per month (org-wide)",default:300,min:10,max:50000,step:10,unit:""},
+          {key:"prsPerWeek",label:"PRs per week (org-wide)",default:75,min:1,max:10000,step:5,unit:""},
           {key:"hoursPerWeek",label:"Hours/week per engineer on review",default:5,min:0.5,max:40,step:0.5,unit:"hrs"},
           {key:"hourlyCost",label:"Fully loaded engineer cost",default:120,min:50,max:400,step:5,unit:"$/hr"},
           {key:"augmentCost",label:"Estimated annual Augment cost",default:180000,min:10000,max:5000000,step:5000,unit:"$"},
@@ -33,7 +33,7 @@ export const USE_CASES = [
         desc:"Focus on bug prevention, incidents, and change failure rate",
         inputs:[
           {key:"devs",label:"Engineers in review",default:50,min:1,max:5000,step:1,unit:""},
-          {key:"prsPerMonth",label:"PRs per month (org-wide)",default:300,min:10,max:50000,step:10,unit:""},
+          {key:"prsPerWeek",label:"PRs per week (org-wide)",default:75,min:1,max:10000,step:5,unit:""},
           {key:"hoursPerWeek",label:"Hours/week per engineer on review",default:5,min:0.5,max:40,step:0.5,unit:"hrs"},
           {key:"reworkRate",label:"% PRs requiring major rework cycles",default:20,min:0,max:80,step:1,unit:"%"},
           {key:"incidentValue",label:"Annual value of avoided incidents",default:150000,min:0,max:5000000,step:10000,unit:"$"},
@@ -57,13 +57,13 @@ export const USE_CASES = [
       if(catId==="capacity"){
         timeSavings = (v.seniorDevs||15)*(v.seniorHoursPerWeek||8)*52*(v.seniorHourlyCost||160)*pct;
       } else if(catId==="throughput"){
-        const prFactor = (v.prsPerMonth||300)/300;
+        const prFactor = (v.prsPerWeek||75)/75;
         timeSavings = (v.devs||50)*(v.hoursPerWeek||5)*52*(v.hourlyCost||120)*pct*prFactor;
       } else {
         timeSavings = (v.devs||50)*(v.hoursPerWeek||5)*52*(v.hourlyCost||120)*pct;
       }
       if(catId==="quality"){
-        reworkSavings=((v.prsPerMonth||300)*12)*((v.reworkRate||20)/100)*0.25*2*(v.hourlyCost||120)*pct;
+        reworkSavings=((v.prsPerWeek||75)*52)*((v.reworkRate||20)/100)*0.25*2*(v.hourlyCost||120)*pct;
       }
       const totalBenefit=timeSavings+reworkSavings+incidentValue;
       const cost=v.augmentCost||180000;
@@ -72,7 +72,7 @@ export const USE_CASES = [
       const hoursRecovered = catId==="capacity"
         ? (v.seniorDevs||15)*(v.seniorHoursPerWeek||8)*52*pct
         : catId==="throughput"
-          ? (v.devs||50)*(v.hoursPerWeek||5)*52*pct*((v.prsPerMonth||300)/300)
+          ? (v.devs||50)*(v.hoursPerWeek||5)*52*pct*((v.prsPerWeek||75)/75)
           : (v.devs||50)*(v.hoursPerWeek||5)*52*pct;
       return {timeSavings,reworkSavings,incidentValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080};
     },
@@ -100,7 +100,7 @@ export const USE_CASES = [
   {
     id:"unit-test", label:"Unit Test Automation", number:"02",
     tagline:"Give engineers back their week. Ship with confidence.",
-    description:"Engineers spend ~10% of their week writing and maintaining unit tests. Augment generates codebase-aware tests, boosts coverage, and auto-fixes CI failures — removing grunt work without sacrificing quality.",
+    description:"Engineers spend ~4 hours/week writing and maintaining unit tests. Augment generates codebase-aware tests, boosts coverage, and auto-fixes CI failures — removing grunt work without sacrificing quality.",
     savingsRange:[0.30,0.50,0.70], savingsLabel:"Test time automated",
     evalCategories:[
       {
@@ -108,7 +108,7 @@ export const USE_CASES = [
         desc:"Focus on time savings and developer hours reclaimed",
         inputs:[
           {key:"devs",label:"Engineers writing/maintaining tests",default:80,min:1,max:5000,step:1,unit:""},
-          {key:"testTimePct",label:"% of week spent on unit tests",default:10,min:1,max:30,step:1,unit:"%"},
+          {key:"testHoursPerWeek",label:"Hours/week per engineer on tests",default:4,min:0.5,max:20,step:0.5,unit:"hrs"},
           {key:"hourlyCost",label:"Fully loaded engineer cost",default:120,min:50,max:400,step:5,unit:"$/hr"},
           {key:"incidentValue",label:"Annual value of avoided defects",default:150000,min:0,max:5000000,step:10000,unit:"$"},
           {key:"augmentCost",label:"Estimated annual Augment cost",default:250000,min:10000,max:5000000,step:5000,unit:"$"},
@@ -119,7 +119,7 @@ export const USE_CASES = [
         desc:"Focus on coverage % gains and test quality",
         inputs:[
           {key:"devs",label:"Engineers writing/maintaining tests",default:80,min:1,max:5000,step:1,unit:""},
-          {key:"testTimePct",label:"% of week spent on unit tests",default:10,min:1,max:30,step:1,unit:"%"},
+          {key:"testHoursPerWeek",label:"Hours/week per engineer on tests",default:4,min:0.5,max:20,step:0.5,unit:"hrs"},
           {key:"currentCoverage",label:"Current avg unit test coverage",default:60,min:0,max:100,step:1,unit:"%"},
           {key:"criticalServices",label:"# of critical services in scope",default:5,min:1,max:100,step:1,unit:""},
           {key:"hourlyCost",label:"Fully loaded engineer cost",default:120,min:50,max:400,step:5,unit:"$/hr"},
@@ -147,7 +147,7 @@ export const USE_CASES = [
         ciSavings=currentCost*pct;
         timeSavings=0; incidentValue=0;
       } else {
-        const weeklyHours=(v.devs||80)*40*((v.testTimePct||10)/100);
+        const weeklyHours=(v.devs||80)*(v.testHoursPerWeek||4);
         const coverageFactor=catId==="coverage"
           ? ((100-(v.currentCoverage||60))/40)*((v.criticalServices||5)/5) : 1;
         timeSavings=weeklyHours*52*(v.hourlyCost||120)*pct*coverageFactor;
@@ -160,7 +160,7 @@ export const USE_CASES = [
         ? ((100-(v.currentCoverage||60))/40)*((v.criticalServices||5)/5) : 1;
       const hoursRecovered=catId==="ci-stability"
         ? (v.ciFailuresPerWeek||30)*52*(v.mttrPerCIFailure||1.5)*(v.peoplePerCIFailure||1.5)*pct
-        : (v.devs||80)*40*((v.testTimePct||10)/100)*52*pct*coverageFactorHrs;
+        : (v.devs||80)*(v.testHoursPerWeek||4)*52*pct*coverageFactorHrs;
       return {timeSavings,ciSavings,incidentValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080};
     },
     metrics:[

@@ -21,15 +21,15 @@ describe('Code Review compute', () => {
   });
 
   it('quality: adds rework savings and incident value', () => {
-    const vals = { devs: 50, prsPerMonth: 300, hoursPerWeek: 5, hourlyCost: 120, reworkRate: 20,
+    const vals = { devs: 50, prsPerWeek: 75, hoursPerWeek: 5, hourlyCost: 120, reworkRate: 20,
       incidentValue: 150000, augmentCost: 180000 };
     const r = uc.compute(vals, 0.40, 'quality');
     expect(r.timeSavings).toBe(624000);
     expect(r.reworkSavings).toBeGreaterThan(0);
-    // reworkSavings = (300*12) * (20/100) * 0.25 * 2 * 120 * 0.40 = 17,280
-    expect(r.reworkSavings).toBeCloseTo(17280, 0);
+    // reworkSavings = (75*52) * (20/100) * 0.25 * 2 * 120 * 0.40 = 18,720
+    expect(r.reworkSavings).toBeCloseTo(75*52*(20/100)*0.25*2*120*0.40, 0);
     expect(r.incidentValue).toBe(150000);
-    expect(r.totalBenefit).toBe(624000 + 17280 + 150000);
+    expect(r.totalBenefit).toBe(624000 + r.reworkSavings + 150000);
   });
 
   it('capacity: uses senior dev inputs', () => {
@@ -40,18 +40,18 @@ describe('Code Review compute', () => {
     expect(r.hoursRecovered).toBe(15 * 8 * 52 * 0.40);
   });
 
-  it('throughput: prsPerMonth slider scales time savings', () => {
-    const base = { devs: 50, prsPerMonth: 300, hoursPerWeek: 5, hourlyCost: 120, augmentCost: 180000 };
+  it('throughput: prsPerWeek slider scales time savings', () => {
+    const base = { devs: 50, prsPerWeek: 75, hoursPerWeek: 5, hourlyCost: 120, augmentCost: 180000 };
     const rBase = uc.compute(base, 0.40, 'throughput');
     // Double PRs → double savings
-    const doubled = { ...base, prsPerMonth: 600 };
+    const doubled = { ...base, prsPerWeek: 150 };
     const rDouble = uc.compute(doubled, 0.40, 'throughput');
     expect(rDouble.timeSavings).toBe(rBase.timeSavings * 2);
     expect(rDouble.hoursRecovered).toBe(rBase.hoursRecovered * 2);
     // Half PRs → half savings
-    const halved = { ...base, prsPerMonth: 150 };
+    const halved = { ...base, prsPerWeek: 37.5 };
     const rHalf = uc.compute(halved, 0.40, 'throughput');
-    expect(rHalf.timeSavings).toBe(rBase.timeSavings * 0.5);
+    expect(rHalf.timeSavings).toBeCloseTo(rBase.timeSavings * 0.5, 0);
   });
 
   it('returns correct ROI formula', () => {
@@ -68,9 +68,9 @@ describe('Unit Test compute', () => {
   const uc = findUseCase('unit-test');
 
   it('velocity: weekly test hours converted to annual savings', () => {
-    const vals = { devs: 80, testTimePct: 10, hourlyCost: 120, incidentValue: 150000, augmentCost: 250000 };
+    const vals = { devs: 80, testHoursPerWeek: 4, hourlyCost: 120, incidentValue: 150000, augmentCost: 250000 };
     const r = uc.compute(vals, 0.50, 'velocity');
-    // weeklyHours = 80*40*(10/100) = 320;  timeSavings = 320*52*120*0.50 = $998,400
+    // weeklyHours = 80*4 = 320;  timeSavings = 320*52*120*0.50 = $998,400
     expect(r.timeSavings).toBe(998400);
     expect(r.incidentValue).toBe(150000);
     expect(r.ciSavings).toBe(0);
@@ -88,7 +88,7 @@ describe('Unit Test compute', () => {
   });
 
   it('coverage: uses currentCoverage and criticalServices', () => {
-    const vals = { devs: 80, testTimePct: 10, currentCoverage: 60, criticalServices: 5,
+    const vals = { devs: 80, testHoursPerWeek: 4, currentCoverage: 60, criticalServices: 5,
       hourlyCost: 120, incidentValue: 100000, augmentCost: 250000 };
     const r = uc.compute(vals, 0.50, 'coverage');
     expect(r.ciSavings).toBe(0);
