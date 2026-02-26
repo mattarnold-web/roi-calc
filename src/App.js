@@ -33,6 +33,7 @@ export const USE_CASES = [
         desc:"Focus on bug prevention, incidents, and change failure rate",
         inputs:[
           {key:"devs",label:"Engineers in review",default:50,min:1,max:5000,step:1,unit:""},
+          {key:"prsPerMonth",label:"PRs per month (org-wide)",default:300,min:10,max:50000,step:10,unit:""},
           {key:"hoursPerWeek",label:"Hours/week per engineer on review",default:5,min:0.5,max:40,step:0.5,unit:"hrs"},
           {key:"reworkRate",label:"% PRs requiring major rework cycles",default:20,min:0,max:80,step:1,unit:"%"},
           {key:"incidentValue",label:"Annual value of avoided incidents",default:150000,min:0,max:5000000,step:10000,unit:"$"},
@@ -62,7 +63,7 @@ export const USE_CASES = [
         timeSavings = (v.devs||50)*(v.hoursPerWeek||5)*52*(v.hourlyCost||120)*pct;
       }
       if(catId==="quality"){
-        reworkSavings=((v.prsPerMonth||300)*12)*(( v.reworkRate||20)/100)*0.25*2*(v.hourlyCost||120)*0.30;
+        reworkSavings=((v.prsPerMonth||300)*12)*((v.reworkRate||20)/100)*0.25*2*(v.hourlyCost||120)*pct;
       }
       const totalBenefit=timeSavings+reworkSavings+incidentValue;
       const cost=v.augmentCost||180000;
@@ -229,8 +230,8 @@ export const USE_CASES = [
         const currentCost=annual*(v.triageHoursPerFailure||1.5)*(v.triagePeople||2)*(v.hourlyCost||130);
         timeSavings=currentCost*pct;
       } else if(catId==="reliability"){
-        trunkLockSavings=(v.trunkLockHours||4)*52*(v.devsBlocked||50)*(v.hourlyCost||130)*pct*0.6;
-        releaseValue=v.releaseDelayValue||200000;
+        trunkLockSavings=(v.trunkLockHours||4)*52*(v.devsBlocked||50)*(v.hourlyCost||130)*pct;
+        releaseValue=(v.releaseDelayValue||200000)*pct;
       } else {
         const annual=(v.failuresPerWeek||50)*52;
         timeSavings=annual*(v.mttrHours||3)*(v.peoplePerFailure||2)*(v.hourlyCost||130)*pct;
@@ -242,7 +243,7 @@ export const USE_CASES = [
       const payback=cost/(totalBenefit/12);
       const hoursRecovered=catId==="triage"
         ?(v.failuresPerWeek||50)*52*(v.triageHoursPerFailure||1.5)*(v.triagePeople||2)*pct
-        :catId==="reliability"?(v.trunkLockHours||4)*52*(v.devsBlocked||50)*pct*0.6
+        :catId==="reliability"?(v.trunkLockHours||4)*52*(v.devsBlocked||50)*pct
         :(v.failuresPerWeek||50)*52*(v.mttrHours||3)*(v.peoplePerFailure||2)*pct;
       const newMttr=catId==="mttr"?(v.mttrHours||3)*(1-pct):null;
       return {timeSavings,trunkLockSavings,releaseValue,totalBenefit,roi,payback,hoursRecovered,fteEquivalent:hoursRecovered/2080,newMttr};
@@ -311,7 +312,7 @@ export const USE_CASES = [
       const annualHours=(v.devs||100)*(v.hrsSavedPerWeek||3)*52;
       const productivityValue=annualHours*pct*(v.hourlyCost||120);
       const onboardingValue=catId==="onboarding"
-        ?(v.onboardingWeeksSaved||2)*40*(v.newDevsPerYear||20)*(v.hourlyCost||120):0;
+        ?(v.onboardingWeeksSaved||2)*40*(v.newDevsPerYear||20)*(v.hourlyCost||120)*pct:0;
       const toolValue=catId==="consolidation"?(v.retiredToolSpend||60000):0;
       const totalBenefit=productivityValue+onboardingValue+toolValue;
       const cost=v.augmentCost||240000;
@@ -647,6 +648,402 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
   doc.save(filename);
 }
 
+// ─── PPTX EXPORT (uses PptxGenJS loaded from CDN) ───
+
+function loadPptxGenJS() {
+  return new Promise((resolve, reject) => {
+    if (window.PptxGenJS) { resolve(window.PptxGenJS); return; }
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js";
+    s.onload = () => resolve(window.PptxGenJS);
+    s.onerror = () => reject(new Error("Failed to load PptxGenJS"));
+    document.head.appendChild(s);
+  });
+}
+
+async function generatePPTX(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, ballpark, useBallparkCost, ballparkEstimate, selectedBallparkCost) {
+  const PptxGenJS = await loadPptxGenJS();
+  const pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_WIDE";
+  pptx.author = "Augment Code";
+  pptx.company = "Augment Code";
+  pptx.title = customerName ? customerName+" — Augment Code ROI" : "Augment Code ROI Analysis";
+
+  // Brand colors
+  const GRN = "158158", BLK = "0D0D0D", WHT = "FFFFFF", GRY = "888888", DKGRY = "444444";
+  const GRNBG = "EBF5F0", GRNBRT = "22C97A", GRNDARK = "0D6B48";
+
+  // Build totals
+  const useCaseMap = {};
+  allCatResults.forEach(r => {
+    if(!useCaseMap[r.useCase.id]) useCaseMap[r.useCase.id] = {useCase:r.useCase, cats:[], maxCost:0};
+    useCaseMap[r.useCase.id].cats.push(r);
+    useCaseMap[r.useCase.id].maxCost = Math.max(useCaseMap[r.useCase.id].maxCost, r.augmentCost);
+  });
+  const grandTotal = allCatResults.reduce((s,r) => s+r.results.totalBenefit, 0);
+  const manualCost = Object.values(useCaseMap).reduce((s,p) => s+p.maxCost, 0);
+  const grandCost = useBallparkCost ? selectedBallparkCost : manualCost;
+  const grandNet = grandTotal - grandCost;
+  const grandROI = grandCost > 0 ? ((grandTotal-grandCost)/grandCost)*100 : 0;
+  const grandPayback = grandCost > 0 ? grandCost/(grandTotal/12) : 0;
+  const grandFTE = allCatResults.reduce((s,r) => s+(r.results.fteEquivalent||0), 0);
+  const grandHours = allCatResults.reduce((s,r) => s+(r.results.hoursRecovered||0), 0);
+  const useCaseCount = Object.keys(useCaseMap).length;
+  const SLabels = ["Conservative","Midpoint","Optimistic"];
+
+  // Helper: add Augment footer to a slide
+  const addFooter = (slide) => {
+    slide.addShape(pptx.shapes.RECTANGLE, {x:0, y:7.0, w:"100%", h:0.5, fill:{color:BLK}});
+    slide.addText("PRIVILEGED & CONFIDENTIAL · AUGMENT CODE", {x:0.5, y:7.1, w:5, h:0.3, fontSize:6, color:GRY, fontFace:"Arial"});
+    slide.addText("Illustrative estimates based on Augment Code pilot data and industry benchmarks.", {x:5.5, y:7.1, w:7.5, h:0.3, fontSize:6, color:GRY, fontFace:"Arial", align:"right"});
+  };
+
+  // Helper: header bar
+  const addHeader = (slide, title, subtitle) => {
+    slide.addShape(pptx.shapes.RECTANGLE, {x:0, y:0, w:"100%", h:1.2, fill:{color:BLK}});
+    slide.addShape(pptx.shapes.RECTANGLE, {x:0, y:1.2, w:"100%", h:0.06, fill:{color:GRN}});
+    // Logo
+    slide.addShape(pptx.shapes.RECTANGLE, {x:0.5, y:0.3, w:0.35, h:0.35, fill:{color:GRN}});
+    slide.addText("A", {x:0.5, y:0.3, w:0.35, h:0.35, fontSize:12, color:WHT, bold:true, fontFace:"Arial", align:"center", valign:"middle"});
+    slide.addText("AUGMENT CODE", {x:0.95, y:0.35, w:2, h:0.25, fontSize:8, color:WHT, bold:true, fontFace:"Arial", charSpacing:2});
+    if(title) slide.addText(title, {x:0.5, y:0.65, w:8, h:0.35, fontSize:16, color:WHT, bold:true, fontFace:"Arial"});
+    if(subtitle) slide.addText(subtitle, {x:0.5, y:0.95, w:8, h:0.2, fontSize:9, color:GRNBRT, fontFace:"Arial"});
+  };
+
+  // ═══ SLIDE 1: TITLE ═══
+  const s1 = pptx.addSlide();
+  s1.background = {color:BLK};
+  // Green accent bar
+  s1.addShape(pptx.shapes.RECTANGLE, {x:0, y:3.1, w:"100%", h:0.08, fill:{color:GRN}});
+  // Logo
+  s1.addShape(pptx.shapes.RECTANGLE, {x:0.7, y:0.6, w:0.5, h:0.5, fill:{color:GRN}});
+  s1.addText("A", {x:0.7, y:0.6, w:0.5, h:0.5, fontSize:18, color:WHT, bold:true, fontFace:"Arial", align:"center", valign:"middle"});
+  s1.addText("AUGMENT CODE", {x:1.35, y:0.7, w:3, h:0.3, fontSize:10, color:WHT, bold:true, fontFace:"Arial", charSpacing:3});
+  // Title
+  s1.addText("Business Value & ROI", {x:0.7, y:2.2, w:10, h:0.7, fontSize:32, color:WHT, bold:true, fontFace:"Arial"});
+  if(customerName) {
+    s1.addText("Prepared for", {x:0.7, y:3.5, w:5, h:0.3, fontSize:10, color:GRY, fontFace:"Arial"});
+    s1.addText(customerName, {x:0.7, y:3.9, w:8, h:0.6, fontSize:24, color:GRNBRT, bold:true, fontFace:"Arial"});
+  } else {
+    s1.addText("Platform ROI Analysis", {x:0.7, y:3.6, w:8, h:0.5, fontSize:18, color:GRNBRT, bold:true, fontFace:"Arial"});
+  }
+  // KPI boxes on title page
+  const kpis = [
+    {l:"Total Annual Benefit",v:"$"+Math.round(grandTotal).toLocaleString()},
+    {l:"Combined ROI",v:Math.round(grandROI)+"%"},
+    {l:"Payback Period",v:grandPayback.toFixed(1)+" months"},
+    {l:"FTEs Recovered",v:grandFTE.toFixed(1)},
+  ];
+  kpis.forEach((k,i) => {
+    const kx = 0.7 + i*3.1;
+    s1.addShape(pptx.shapes.RECTANGLE, {x:kx, y:5.0, w:2.8, h:0.85, fill:{color:"1A1A1A"}});
+    s1.addShape(pptx.shapes.RECTANGLE, {x:kx, y:5.0, w:2.8, h:0.04, fill:{color:GRN}});
+    s1.addText(k.l, {x:kx+0.15, y:5.1, w:2.5, h:0.25, fontSize:7, color:GRY, fontFace:"Arial"});
+    s1.addText(k.v, {x:kx+0.15, y:5.35, w:2.5, h:0.4, fontSize:16, color:WHT, bold:true, fontFace:"Arial"});
+  });
+  addFooter(s1);
+
+  // ═══ SLIDE 2: EXECUTIVE SUMMARY ═══
+  const s2 = pptx.addSlide();
+  s2.background = {color:WHT};
+  addHeader(s2, customerName ? customerName+" × Augment Code" : "Full Platform ROI Summary",
+    useCaseCount+" use case"+(useCaseCount>1?"s":"")+", "+allCatResults.length+" evaluation categor"+(allCatResults.length===1?"y":"ies"));
+
+  // KPI boxes
+  const summaryKPIs = [
+    {l:"Total Annual Benefit",v:"$"+Math.round(grandTotal).toLocaleString()},
+    {l:"Combined ROI",v:Math.round(grandROI)+"%"},
+    {l:"Payback Period",v:grandPayback.toFixed(1)+" mo"},
+    {l:"Net Annual Return",v:"$"+Math.round(grandNet).toLocaleString()},
+  ];
+  summaryKPIs.forEach((k,i) => {
+    const kx = 0.5 + i*3.15;
+    s2.addShape(pptx.shapes.RECTANGLE, {x:kx, y:1.5, w:2.9, h:0.75, fill:{color:GRNBG}, line:{color:GRN, width:1.5}});
+    s2.addText(k.l, {x:kx+0.12, y:1.55, w:2.6, h:0.2, fontSize:7, color:GRN, bold:true, fontFace:"Arial"});
+    s2.addText(k.v, {x:kx+0.12, y:1.78, w:2.6, h:0.4, fontSize:14, color:BLK, bold:true, fontFace:"Arial"});
+  });
+
+  // Per-category table
+  const tblHeader = [
+    [{text:"Use Case",options:{bold:true,fontSize:7,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+     {text:"Category",options:{bold:true,fontSize:7,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+     {text:"Scenario",options:{bold:true,fontSize:7,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+     {text:"Total Benefit",options:{bold:true,fontSize:7,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+     {text:"ROI",options:{bold:true,fontSize:7,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+     {text:"FTEs",options:{bold:true,fontSize:7,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+     {text:"Payback",options:{bold:true,fontSize:7,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}}]
+  ];
+  const tblRows = allCatResults.map((r,i) => {
+    const bg = i%2===0 ? WHT : "F8F8F8";
+    return [
+      {text:r.useCase.label,options:{bold:true,fontSize:8,color:BLK,fill:{color:bg},fontFace:"Arial"}},
+      {text:r.categoryLabel,options:{fontSize:8,color:GRY,fill:{color:bg},fontFace:"Arial"}},
+      {text:SLabels[r.scenarioIdx],options:{fontSize:8,color:GRY,fill:{color:bg},fontFace:"Arial"}},
+      {text:"$"+Math.round(r.results.totalBenefit).toLocaleString(),options:{bold:true,fontSize:8,color:BLK,fill:{color:bg},fontFace:"Arial"}},
+      {text:Math.round(r.results.roi)+"%",options:{bold:true,fontSize:8,color:GRN,fill:{color:bg},fontFace:"Arial"}},
+      {text:(r.results.fteEquivalent||0).toFixed(1),options:{fontSize:8,color:BLK,fill:{color:bg},fontFace:"Arial"}},
+      {text:r.results.payback.toFixed(1)+" mo",options:{fontSize:8,color:BLK,fill:{color:bg},fontFace:"Arial"}}
+    ];
+  });
+  // Totals row
+  tblRows.push([
+    {text:"TOTAL ("+useCaseCount+" use cases)",options:{bold:true,fontSize:8,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+    {text:"",options:{fill:{color:GRNBG}}},
+    {text:"",options:{fill:{color:GRNBG}}},
+    {text:"$"+Math.round(grandTotal).toLocaleString(),options:{bold:true,fontSize:9,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+    {text:Math.round(grandROI)+"%",options:{bold:true,fontSize:9,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+    {text:grandFTE.toFixed(1),options:{bold:true,fontSize:8,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}},
+    {text:grandPayback.toFixed(1)+" mo",options:{bold:true,fontSize:8,color:GRN,fill:{color:GRNBG},fontFace:"Arial"}}
+  ]);
+
+  s2.addTable([...tblHeader,...tblRows], {
+    x:0.5, y:2.5, w:12.3, colW:[2.2,1.6,1.3,2.0,1.2,0.8,1.2],
+    border:{type:"solid",pt:0.5,color:"E0E0E0"},
+    rowH:0.3,
+  });
+
+  // Narrative
+  const narrativeY = 2.5 + (allCatResults.length+2)*0.3 + 0.3;
+  if(narrativeY < 6.5) {
+    s2.addShape(pptx.shapes.RECTANGLE, {x:0.5, y:narrativeY, w:12.3, h:0.7, fill:{color:BLK}});
+    s2.addText("EXECUTIVE NARRATIVE", {x:0.7, y:narrativeY+0.05, w:4, h:0.2, fontSize:7, color:GRNBRT, bold:true, fontFace:"Arial"});
+    const narrative = "Across "+useCaseCount+" active Augment Code use case"+(useCaseCount>1?"s":"")+" and "+allCatResults.length+" evaluation categor"+(allCatResults.length===1?"y":"ies")+", the platform delivers $"+Math.round(grandTotal).toLocaleString()+" in annual benefit against a $"+Math.round(grandCost).toLocaleString()+" investment — a "+Math.round(grandROI)+"% combined ROI with a payback period of "+grandPayback.toFixed(1)+" months, recovering "+grandFTE.toFixed(1)+" FTEs of engineering capacity annually.";
+    s2.addText(narrative, {x:0.7, y:narrativeY+0.25, w:11.9, h:0.4, fontSize:8, color:"CCCCCC", fontFace:"Arial", wrap:true});
+  }
+  addFooter(s2);
+
+  // ═══ SLIDES 3+: PER USE CASE ═══
+  USE_CASES.filter(p => enabled[p.id]).forEach(useCase => {
+    const slide = pptx.addSlide();
+    slide.background = {color:WHT};
+    const cats = enabledCats[useCase.id] || [];
+    const catResults = cats.map(catId => {
+      const cat = useCase.evalCategories.find(c => c.id === catId);
+      const vals = catValues[useCase.id]?.[catId] || {};
+      const si = catScenarios[useCase.id]?.[catId] ?? 1;
+      const pct = useCase.savingsRange[si];
+      const results = useCase.compute(vals, pct, catId);
+      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost:vals.augmentCost||180000};
+    });
+    const ucBenefit = catResults.reduce((s,r) => s+r.results.totalBenefit, 0);
+    const ucCost = Math.max(...catResults.map(r => r.augmentCost), 0);
+    const roiMultiple = ucCost > 0 ? (ucBenefit/ucCost).toFixed(1) : "0";
+
+    // Header
+    addHeader(slide,
+      useCase.label,
+      "Use Case "+useCase.number+" · "+cats.length+" categor"+(cats.length===1?"y":"ies")+" · "+useCase.tagline
+    );
+
+    // ROI badges in header
+    slide.addShape(pptx.shapes.RECTANGLE, {x:10.2, y:0.25, w:1.3, h:0.7, fill:{color:"1A1A1A"}});
+    slide.addText("Combined Benefit", {x:10.25, y:0.28, w:1.2, h:0.2, fontSize:6, color:GRY, fontFace:"Arial"});
+    slide.addText("$"+Math.round(ucBenefit).toLocaleString(), {x:10.25, y:0.5, w:1.2, h:0.35, fontSize:11, color:WHT, bold:true, fontFace:"Arial"});
+    slide.addShape(pptx.shapes.RECTANGLE, {x:11.6, y:0.25, w:1.2, h:0.7, fill:{color:GRN}});
+    slide.addText("ROI", {x:11.65, y:0.28, w:1.1, h:0.2, fontSize:6, color:"C0FFC0", fontFace:"Arial"});
+    slide.addText(roiMultiple+"×", {x:11.65, y:0.5, w:1.1, h:0.35, fontSize:16, color:WHT, bold:true, fontFace:"Arial"});
+
+    let curY = 1.5;
+    catResults.forEach(cr => {
+      if(curY > 5.8) return; // Don't overflow
+      slide.addText(cr.cat.label.toUpperCase()+" — "+SLabels[cr.scenarioIdx]+" ("+Math.round(cr.pct*100)+"%)", {
+        x:0.5, y:curY, w:6, h:0.25, fontSize:8, color:GRN, bold:true, fontFace:"Arial"
+      });
+      curY += 0.3;
+
+      // Results metrics as boxes
+      const metrics = useCase.metrics.filter(m => {
+        const v = cr.results[m.key];
+        return v !== undefined && v !== null && v !== 0;
+      });
+      metrics.forEach((m,i) => {
+        const mx = 0.5 + i*2.1;
+        const v = cr.results[m.key];
+        const fv = m.format==="dollar"?"$"+Math.round(v).toLocaleString():m.format==="percent"?Math.round(v)+"%":m.format==="hours"?Math.round(v).toLocaleString()+" hrs":m.format==="fte"?v.toFixed(1)+" FTEs":String(v);
+        const bg = m.highlight ? GRNBG : "F8F8F8";
+        const tc = m.highlight ? GRN : BLK;
+        slide.addShape(pptx.shapes.RECTANGLE, {x:mx, y:curY, w:1.9, h:0.55, fill:{color:bg}});
+        slide.addText(m.label, {x:mx+0.08, y:curY+0.03, w:1.7, h:0.15, fontSize:6, color:m.highlight?GRN:GRY, fontFace:"Arial"});
+        slide.addText(fv, {x:mx+0.08, y:curY+0.2, w:1.7, h:0.3, fontSize:10, color:tc, bold:true, fontFace:"Arial"});
+      });
+      curY += 0.7;
+    });
+
+    // Benchmarks
+    if(curY < 5.5) {
+      slide.addShape(pptx.shapes.RECTANGLE, {x:0.5, y:curY+0.1, w:12.3, h:0.65, fill:{color:BLK}});
+      slide.addText("VALIDATED PILOT OUTCOMES", {x:0.65, y:curY+0.15, w:4, h:0.2, fontSize:7, color:GRNBRT, bold:true, fontFace:"Arial"});
+      useCase.benchmarks.forEach((b,i) => {
+        const bx = 0.65 + i*3.05;
+        slide.addText(b.stat, {x:bx, y:curY+0.35, w:1.5, h:0.18, fontSize:10, color:GRNBRT, bold:true, fontFace:"Arial"});
+        slide.addText(b.label, {x:bx+1.5, y:curY+0.35, w:1.4, h:0.18, fontSize:6, color:GRY, fontFace:"Arial"});
+      });
+    }
+    addFooter(slide);
+  });
+
+  // Save
+  const filename = customerName ? customerName.replace(/[^a-zA-Z0-9]/g,"_")+"_Augment_ROI.pptx" : "Augment_Code_ROI_Analysis.pptx";
+  await pptx.writeFile({fileName:filename});
+}
+
+// ─── EXCEL EXPORT (uses SheetJS loaded from CDN) ───
+
+function loadSheetJS() {
+  return new Promise((resolve, reject) => {
+    if (window.XLSX) { resolve(window.XLSX); return; }
+    const s = document.createElement("script");
+    s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+    s.onload = () => resolve(window.XLSX);
+    s.onerror = () => reject(new Error("Failed to load SheetJS"));
+    document.head.appendChild(s);
+  });
+}
+
+async function generateExcel(allCatResults, customerName, enabled, enabledCats, catValues, catScenarios, thresholds, showPilot, ballpark, useBallparkCost, ballparkEstimate, selectedBallparkCost) {
+  const XLSX = await loadSheetJS();
+  const wb = XLSX.utils.book_new();
+
+  // Build totals
+  const useCaseMap = {};
+  allCatResults.forEach(r => {
+    if(!useCaseMap[r.useCase.id]) useCaseMap[r.useCase.id] = {useCase:r.useCase, cats:[], maxCost:0};
+    useCaseMap[r.useCase.id].cats.push(r);
+    useCaseMap[r.useCase.id].maxCost = Math.max(useCaseMap[r.useCase.id].maxCost, r.augmentCost);
+  });
+  const grandTotal = allCatResults.reduce((s,r) => s+r.results.totalBenefit, 0);
+  const manualCost = Object.values(useCaseMap).reduce((s,p) => s+p.maxCost, 0);
+  const grandCost = useBallparkCost ? selectedBallparkCost : manualCost;
+  const grandROI = grandCost > 0 ? ((grandTotal-grandCost)/grandCost)*100 : 0;
+  const grandPayback = grandCost > 0 ? grandCost/(grandTotal/12) : 0;
+  const grandFTE = allCatResults.reduce((s,r) => s+(r.results.fteEquivalent||0), 0);
+  const grandHours = allCatResults.reduce((s,r) => s+(r.results.hoursRecovered||0), 0);
+  const SLabels = ["Conservative","Midpoint","Optimistic"];
+
+  // ─── Summary Sheet ───
+  const summaryData = [
+    ["Augment Code ROI Analysis"+(customerName?" — "+customerName:"")],
+    [],
+    ["KEY METRICS"],
+    ["Total Annual Benefit", Math.round(grandTotal)],
+    ["Combined ROI", Math.round(grandROI)+"%"],
+    ["Payback Period (months)", +grandPayback.toFixed(1)],
+    ["Net Annual Return", Math.round(grandTotal-grandCost)],
+    ["Engineering Hours Recovered/yr", Math.round(grandHours)],
+    ["FTE Capacity Recovered", +grandFTE.toFixed(1)],
+    ["Platform Investment", Math.round(grandCost)],
+    [],
+    ["PER-CATEGORY BREAKDOWN"],
+    ["Use Case", "Category", "Scenario", "Total Benefit ($)", "ROI (%)", "FTEs", "Payback (mo)", "Hours Recovered"],
+  ];
+  allCatResults.forEach(r => {
+    summaryData.push([
+      r.useCase.label,
+      r.categoryLabel,
+      SLabels[r.scenarioIdx],
+      Math.round(r.results.totalBenefit),
+      Math.round(r.results.roi),
+      +(r.results.fteEquivalent||0).toFixed(1),
+      +r.results.payback.toFixed(1),
+      Math.round(r.results.hoursRecovered||0),
+    ]);
+  });
+  summaryData.push([]);
+  summaryData.push([
+    "TOTAL",
+    "",
+    "",
+    Math.round(grandTotal),
+    Math.round(grandROI),
+    +grandFTE.toFixed(1),
+    +grandPayback.toFixed(1),
+    Math.round(grandHours),
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet(summaryData);
+  // Set column widths
+  ws["!cols"] = [
+    {wch:28},{wch:22},{wch:14},{wch:16},{wch:10},{wch:8},{wch:14},{wch:18}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, "Summary");
+
+  // ─── Per Use Case Sheets ───
+  USE_CASES.filter(p => enabled[p.id]).forEach(useCase => {
+    const cats = enabledCats[useCase.id] || [];
+    const rows = [
+      [useCase.label+" — ROI Detail"],
+      [useCase.tagline],
+      [],
+    ];
+
+    cats.forEach(catId => {
+      const cat = useCase.evalCategories.find(c => c.id === catId);
+      if(!cat) return;
+      const vals = catValues[useCase.id]?.[catId] || {};
+      const si = catScenarios[useCase.id]?.[catId] ?? 1;
+      const pct = useCase.savingsRange[si];
+      const results = useCase.compute(vals, pct, catId);
+
+      rows.push(["CATEGORY: "+cat.label+" ("+SLabels[si]+" — "+Math.round(pct*100)+"%)"]);
+      rows.push([]);
+      rows.push(["INPUTS"]);
+      cat.inputs.forEach(inp => {
+        const val = vals[inp.key] ?? inp.default;
+        rows.push(["  "+inp.label, val, inp.unit]);
+      });
+      rows.push([]);
+      rows.push(["RESULTS"]);
+      useCase.metrics.forEach(m => {
+        const v = results[m.key];
+        if(v!==undefined && v!==null) {
+          const fv = m.format==="dollar"?Math.round(v):m.format==="percent"?Math.round(v)+"%":m.format==="hours"?Math.round(v):m.format==="fte"?+v.toFixed(1):v;
+          rows.push(["  "+m.label, fv, m.format==="dollar"?"$":m.format==="hours"?"hrs":""]);
+        }
+      });
+      rows.push([]);
+    });
+
+    // Benchmarks
+    rows.push(["BENCHMARKS"]);
+    useCase.benchmarks.forEach(b => rows.push(["  "+b.stat, b.label]));
+
+    const ucWs = XLSX.utils.aoa_to_sheet(rows);
+    ucWs["!cols"] = [{wch:40},{wch:20},{wch:10}];
+    // Truncate sheet name to 31 chars (Excel limit)
+    const sheetName = useCase.label.substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ucWs, sheetName);
+  });
+
+  // ─── Ballpark Cost Sheet (if enabled) ───
+  if(useBallparkCost && ballpark) {
+    const bRows = [
+      ["Ballpark Augment Cost Estimator"],
+      [],
+      ["Total Developers in Scope", ballpark.totalDevs],
+      ["Platform Tier", ballpark.tierName],
+      ["Platform Fee ($/yr)", ballpark.platformFee],
+      ["Max Developers", ballpark.maxDevs],
+      [],
+      ["Investment Range (Low)", Math.round(ballpark.investmentLow)],
+      ["Investment Range (High)", Math.round(ballpark.investmentHigh)],
+      ["Credit Pool (Low)", Math.round(ballpark.creditsLow)],
+      ["Credit Pool (High)", Math.round(ballpark.creditsHigh)],
+      [],
+      ["Selected Estimate", ballparkEstimate==="high"?"High":"Low"],
+      ["Selected Cost ($/yr)", Math.round(selectedBallparkCost)],
+      [],
+      ["* This is an illustrative estimate only, not a binding quote."],
+    ];
+    const bWs = XLSX.utils.aoa_to_sheet(bRows);
+    bWs["!cols"] = [{wch:30},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, bWs, "Ballpark Cost");
+  }
+
+  // Save
+  const filename = customerName ? customerName.replace(/[^a-zA-Z0-9]/g,"_")+"_Augment_ROI.xlsx" : "Augment_Code_ROI_Analysis.xlsx";
+  XLSX.writeFile(wb, filename);
+}
+
 // ─── HELPERS ───
 
 export const fmt=(val,format)=>{
@@ -861,7 +1258,7 @@ function BallparkCostPanel({ ballpark, useBallparkCost, onToggle, ballparkEstima
   );
 }
 
-function Slider({input,value,onChange,overrideValue,overrideLabel}){
+function Slider({input,value,onChange,overrideValue,overrideLabel,onHide}){
   const displayValue = overrideValue != null ? overrideValue : value;
   const clampedValue = Math.min(Math.max(displayValue, input.min), input.max);
   const pct=((clampedValue-input.min)/(input.max-input.min))*100;
@@ -870,9 +1267,12 @@ function Slider({input,value,onChange,overrideValue,overrideLabel}){
   return(
     <div style={{marginBottom:14,opacity:isOverridden?0.85:1}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-        <label style={{fontSize:10,color:isOverridden?B.greenDark:B.gray,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:isOverridden?700:500}}>
-          {input.label}{isOverridden&&overrideLabel?<span style={{fontSize:8,color:B.green,marginLeft:6,fontWeight:600}}>({overrideLabel})</span>:null}
-        </label>
+        <div style={{display:"flex",alignItems:"baseline",gap:4,flex:1,minWidth:0}}>
+          {onHide&&<button onClick={onHide} title="Hide this field" style={{background:"none",border:"none",cursor:"pointer",color:B.gray,fontSize:10,padding:0,lineHeight:1,flexShrink:0,opacity:0.5}}>×</button>}
+          <label style={{fontSize:10,color:isOverridden?B.greenDark:B.gray,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:isOverridden?700:500}}>
+            {input.label}{isOverridden&&overrideLabel?<span style={{fontSize:8,color:B.green,marginLeft:6,fontWeight:600}}>({overrideLabel})</span>:null}
+          </label>
+        </div>
         <span style={{fontSize:13,fontWeight:700,color:B.green}}>{dv}</span>
       </div>
       <div style={{position:"relative",height:4}}>
@@ -887,19 +1287,22 @@ function Slider({input,value,onChange,overrideValue,overrideLabel}){
   );
 }
 
-function MetricCard({metric,value}){
+function MetricCard({metric,value,onHide}){
   const f=fmt(value,metric.format);
+  const hideBtn=onHide?<button onClick={onHide} title="Hide this metric" style={{position:"absolute",top:4,right:6,background:"none",border:"none",cursor:"pointer",color:B.gray,fontSize:10,padding:0,lineHeight:1,opacity:0.4}}>×</button>:null;
   if(metric.highlight){
     const neg=metric.format==="percent"&&value<0;
     return(
-      <div style={{background:neg?B.redBg:B.greenBg,border:`2px solid ${neg?B.red:B.green}`,borderRadius:4,padding:"12px 14px"}}>
+      <div style={{position:"relative",background:neg?B.redBg:B.greenBg,border:`2px solid ${neg?B.red:B.green}`,borderRadius:4,padding:"12px 14px"}}>
+        {hideBtn}
         <div style={{fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,marginBottom:4}}>{metric.label}</div>
         <div style={{fontSize:20,fontWeight:700,color:neg?B.red:B.greenDark,lineHeight:1}}>{f}</div>
       </div>
     );
   }
   return(
-    <div style={{background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"10px 12px"}}>
+    <div style={{position:"relative",background:B.cardBg,border:"1px solid #E8E8E8",borderLeft:`3px solid ${B.green}`,borderRadius:4,padding:"10px 12px"}}>
+      {hideBtn}
       <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:500,marginBottom:3}}>{metric.label}</div>
       <div style={{fontSize:16,fontWeight:700,color:B.black,lineHeight:1}}>{f}</div>
     </div>
@@ -943,10 +1346,20 @@ function ThresholdMeter({threshold,value,onChange}){
 
 // ─── CATEGORY PANEL (one per enabled category) ───
 
-function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly,effectiveCost}){
+function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly,effectiveCost,hiddenInputKeys,hiddenMetricKeys,onHideInput,onRestoreInput,onHideMetric,onRestoreMetric}){
   const pct=useCase.savingsRange[scenarioIdx];
-  const effectiveVals = {...vals, augmentCost: effectiveCost};
-  const results=useCase.compute(effectiveVals,pct,cat.id);
+  // For hidden inputs, use default values in computation
+  const computeVals = {...vals};
+  (hiddenInputKeys||[]).forEach(key=>{
+    const inp=cat.inputs.find(i=>i.key===key);
+    if(inp) computeVals[key]=inp.default;
+  });
+  computeVals.augmentCost = effectiveCost;
+  const results=useCase.compute(computeVals,pct,cat.id);
+  const visibleInputs=cat.inputs.filter(inp=>inp.key!=="augmentCost"&&!(hiddenInputKeys||[]).includes(inp.key));
+  const hiddenInputList=cat.inputs.filter(inp=>inp.key!=="augmentCost"&&(hiddenInputKeys||[]).includes(inp.key));
+  const visibleMetrics=useCase.metrics.filter(m=>!(hiddenMetricKeys||[]).includes(m.key));
+  const hiddenMetricList=useCase.metrics.filter(m=>(hiddenMetricKeys||[]).includes(m.key));
   return(
     <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
       {/* Category header */}
@@ -960,9 +1373,20 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
         {/* LEFT: inputs + scenario */}
         <div>
-          <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Inputs</div>
-          {cat.inputs.filter(inp=>inp.key!=="augmentCost").map(inp=>(
-            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}/>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Inputs</div>
+            {hiddenInputList.length>0&&(
+              <div style={{position:"relative",display:"inline-block"}}>
+                <select onChange={e=>{if(e.target.value){onRestoreInput(e.target.value);e.target.value="";}}} value=""
+                  style={{background:B.white,border:`1px dashed ${B.green}`,borderRadius:3,padding:"2px 6px",fontSize:8,fontWeight:600,color:B.green,cursor:"pointer",appearance:"auto"}}>
+                  <option value="">+ Restore ({hiddenInputList.length})</option>
+                  {hiddenInputList.map(inp=><option key={inp.key} value={inp.key}>{inp.label}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+          {visibleInputs.map(inp=>(
+            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange} onHide={()=>onHideInput(inp.key)}/>
           ))}
           {/* Scenario mini-selector */}
           <div style={{marginTop:8,padding:"10px 12px",background:B.offWhite,borderRadius:4}}>
@@ -985,9 +1409,20 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
         </div>
         {/* RIGHT: results */}
         <div>
-          <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Results — {cat.label}</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Results — {cat.label}</div>
+            {hiddenMetricList.length>0&&(
+              <div style={{position:"relative",display:"inline-block"}}>
+                <select onChange={e=>{if(e.target.value){onRestoreMetric(e.target.value);e.target.value="";}}} value=""
+                  style={{background:B.white,border:`1px dashed ${B.green}`,borderRadius:3,padding:"2px 6px",fontSize:8,fontWeight:600,color:B.green,cursor:"pointer",appearance:"auto"}}>
+                  <option value="">+ Restore ({hiddenMetricList.length})</option>
+                  {hiddenMetricList.map(m=><option key={m.key} value={m.key}>{m.label}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {useCase.metrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]}/>)}
+            {visibleMetrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]} onHide={()=>onHideMetric(m.key)}/>)}
           </div>
           <div style={{marginTop:10,padding:"8px 10px",background:results.totalBenefit>effectiveCost?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>effectiveCost?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase"}}>Net Benefit</span>
@@ -1001,7 +1436,7 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
 
 // ─── USE CASE TAB (multi-category) ───
 
-function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot,platformCost}){
+function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot,platformCost,hiddenInputs,hiddenMetrics,onHideInput,onRestoreInput,onHideMetric,onRestoreMetric}){
   // Compute results for each enabled category
   const catResults=enabledCats.map(catId=>{
     const cat=useCase.evalCategories.find(c=>c.id===catId);
@@ -1096,6 +1531,12 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
             onRemove={()=>onToggleCat(catId)}
             isOnly={enabledCats.length===1}
             effectiveCost={combinedCost}
+            hiddenInputKeys={(hiddenInputs||{})[catId]||[]}
+            hiddenMetricKeys={hiddenMetrics||[]}
+            onHideInput={key=>onHideInput(catId,key)}
+            onRestoreInput={key=>onRestoreInput(catId,key)}
+            onHideMetric={onHideMetric}
+            onRestoreMetric={onRestoreMetric}
           />
         ))}
         {/* Combined Use Case Summary (when multiple categories) */}
@@ -1269,11 +1710,19 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
         </div>
       </div>
       <div style={{padding:"18px 32px"}}>
-        {/* Export PDF button */}
-        <div style={{textAlign:"right",marginBottom:16}}>
+        {/* Export buttons */}
+        <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:16}}>
           <button onClick={()=>generatePDF(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,ballparkEstimate,selectedBallparkCost)}
-            style={{background:B.green,color:"white",border:"none",padding:"10px 24px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:6}}>
-            <span style={{fontSize:14}}>↓</span> Export to PDF
+            style={{background:B.green,color:"white",border:"none",padding:"10px 20px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:5}}>
+            <span style={{fontSize:13}}>↓</span> PDF
+          </button>
+          <button onClick={()=>generatePPTX(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,ballparkEstimate,selectedBallparkCost)}
+            style={{background:B.greenDark,color:"white",border:"none",padding:"10px 20px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:5}}>
+            <span style={{fontSize:13}}>↓</span> PowerPoint
+          </button>
+          <button onClick={()=>generateExcel(allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,ballpark,useBallparkCost,ballparkEstimate,selectedBallparkCost)}
+            style={{background:B.darkGray,color:"white",border:"none",padding:"10px 20px",borderRadius:6,fontSize:10,fontWeight:700,cursor:"pointer",letterSpacing:"0.04em",textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:5}}>
+            <span style={{fontSize:13}}>↓</span> Excel
           </button>
         </div>
         {/* Ballpark Cost Estimator */}
@@ -1432,6 +1881,39 @@ function ROICalculator(){
     USE_CASES.forEach(p=>{if(p.successThresholds){t[p.id]={};p.successThresholds.forEach(s=>{t[p.id][s.key]=0;});}});
     return t;
   });
+
+  const [hiddenInputs,setHiddenInputs]=useState({});
+  const [hiddenMetrics,setHiddenMetrics]=useState({});
+
+  const handleHideInput=useCallback((useCaseId,catId,key)=>{
+    setHiddenInputs(prev=>{
+      const uc=prev[useCaseId]||{};
+      const cat=uc[catId]||[];
+      return {...prev,[useCaseId]:{...uc,[catId]:[...cat,key]}};
+    });
+  },[]);
+
+  const handleRestoreInput=useCallback((useCaseId,catId,key)=>{
+    setHiddenInputs(prev=>{
+      const uc=prev[useCaseId]||{};
+      const cat=(uc[catId]||[]).filter(k=>k!==key);
+      return {...prev,[useCaseId]:{...uc,[catId]:cat}};
+    });
+  },[]);
+
+  const handleHideMetric=useCallback((useCaseId,key)=>{
+    setHiddenMetrics(prev=>{
+      const uc=prev[useCaseId]||[];
+      return {...prev,[useCaseId]:[...uc,key]};
+    });
+  },[]);
+
+  const handleRestoreMetric=useCallback((useCaseId,key)=>{
+    setHiddenMetrics(prev=>{
+      const uc=(prev[useCaseId]||[]).filter(k=>k!==key);
+      return {...prev,[useCaseId]:uc};
+    });
+  },[]);
 
   const handleValueChange=useCallback((useCaseId,catId,key,val)=>{
     setCatValues(prev=>({
@@ -1631,6 +2113,12 @@ function ROICalculator(){
             showPilot={showPilot[activeUseCase.id]??true}
             onTogglePilot={()=>handleTogglePilot(activeUseCase.id)}
             platformCost={selectedBallparkCost}
+            hiddenInputs={hiddenInputs[activeUseCase.id]||{}}
+            hiddenMetrics={hiddenMetrics[activeUseCase.id]||[]}
+            onHideInput={(catId,key)=>handleHideInput(activeUseCase.id,catId,key)}
+            onRestoreInput={(catId,key)=>handleRestoreInput(activeUseCase.id,catId,key)}
+            onHideMetric={key=>handleHideMetric(activeUseCase.id,key)}
+            onRestoreMetric={key=>handleRestoreMetric(activeUseCase.id,key)}
           />
         ):(
           <DisabledTab useCase={activeUseCase} onEnable={()=>setEnabled(prev=>({...prev,[activeUseCase.id]:true}))}/>

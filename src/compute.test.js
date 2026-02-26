@@ -21,15 +21,15 @@ describe('Code Review compute', () => {
   });
 
   it('quality: adds rework savings and incident value', () => {
-    const vals = { devs: 50, hoursPerWeek: 5, hourlyCost: 120, reworkRate: 20,
-      prsPerMonth: 300, incidentValue: 150000, augmentCost: 180000 };
+    const vals = { devs: 50, prsPerMonth: 300, hoursPerWeek: 5, hourlyCost: 120, reworkRate: 20,
+      incidentValue: 150000, augmentCost: 180000 };
     const r = uc.compute(vals, 0.40, 'quality');
     expect(r.timeSavings).toBe(624000);
     expect(r.reworkSavings).toBeGreaterThan(0);
-    // reworkSavings = (300*12) * (20/100) * 0.25 * 2 * 120 * 0.30 = 12,960
-    expect(r.reworkSavings).toBeCloseTo(12960, 0);
+    // reworkSavings = (300*12) * (20/100) * 0.25 * 2 * 120 * 0.40 = 17,280
+    expect(r.reworkSavings).toBeCloseTo(17280, 0);
     expect(r.incidentValue).toBe(150000);
-    expect(r.totalBenefit).toBe(624000 + 12960 + 150000);
+    expect(r.totalBenefit).toBe(624000 + 17280 + 150000);
   });
 
   it('capacity: uses senior dev inputs', () => {
@@ -128,12 +128,13 @@ describe('Build Failure compute', () => {
   it('reliability: trunk lock + release delay, scales with pct', () => {
     const vals = { trunkLockHours: 4, devsBlocked: 50, hourlyCost: 130, releaseDelayValue: 200000, augmentCost: 200000 };
     const r = uc.compute(vals, 0.70, 'reliability');
-    expect(r.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.70 * 0.6);
-    expect(r.releaseValue).toBe(200000);
+    expect(r.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.70);
+    expect(r.releaseValue).toBe(200000 * 0.70);
     expect(r.timeSavings).toBe(0);
     // Scenario selector changes the result
     const rLow = uc.compute(vals, 0.50, 'reliability');
-    expect(rLow.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.50 * 0.6);
+    expect(rLow.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.50);
+    expect(rLow.releaseValue).toBe(200000 * 0.50);
     expect(rLow.trunkLockSavings).toBeLessThan(r.trunkLockSavings);
   });
 });
@@ -156,8 +157,8 @@ describe('Interactive compute', () => {
     const vals = { devs: 100, hrsSavedPerWeek: 3, hourlyCost: 120,
       onboardingWeeksSaved: 2, newDevsPerYear: 20, augmentCost: 240000 };
     const r = uc.compute(vals, 0.80, 'onboarding');
-    // onboardingValue = 2 * 40 * 20 * 120 = $192,000
-    expect(r.onboardingValue).toBe(2 * 40 * 20 * 120);
+    // onboardingValue = 2 * 40 * 20 * 120 * 0.80 = $153,600
+    expect(r.onboardingValue).toBe(2 * 40 * 20 * 120 * 0.80);
     expect(r.productivityValue).toBeGreaterThan(0);
   });
 
