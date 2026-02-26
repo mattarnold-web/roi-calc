@@ -861,21 +861,27 @@ function BallparkCostPanel({ ballpark, useBallparkCost, onToggle, ballparkEstima
   );
 }
 
-function Slider({input,value,onChange}){
-  const pct=((value-input.min)/(input.max-input.min))*100;
-  const dv=input.unit==="$"?"$"+value.toLocaleString():input.unit==="%"?value+"%":input.unit==="$/hr"?"$"+value+"/hr":input.unit==="hrs"?value+" hrs":input.unit==="wks"?value+" wks":value.toLocaleString();
+function Slider({input,value,onChange,overrideValue,overrideLabel}){
+  const displayValue = overrideValue != null ? overrideValue : value;
+  const clampedValue = Math.min(Math.max(displayValue, input.min), input.max);
+  const pct=((clampedValue-input.min)/(input.max-input.min))*100;
+  const isOverridden = overrideValue != null;
+  const dv=input.unit==="$"?"$"+Math.round(displayValue).toLocaleString():input.unit==="%"?displayValue+"%":input.unit==="$/hr"?"$"+displayValue+"/hr":input.unit==="hrs"?displayValue+" hrs":input.unit==="wks"?displayValue+" wks":Math.round(displayValue).toLocaleString();
   return(
-    <div style={{marginBottom:14}}>
+    <div style={{marginBottom:14,opacity:isOverridden?0.85:1}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
-        <label style={{fontSize:10,color:B.gray,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:500}}>{input.label}</label>
+        <label style={{fontSize:10,color:isOverridden?B.greenDark:B.gray,letterSpacing:"0.05em",textTransform:"uppercase",fontWeight:isOverridden?700:500}}>
+          {input.label}{isOverridden&&overrideLabel?<span style={{fontSize:8,color:B.green,marginLeft:6,fontWeight:600}}>({overrideLabel})</span>:null}
+        </label>
         <span style={{fontSize:13,fontWeight:700,color:B.green}}>{dv}</span>
       </div>
       <div style={{position:"relative",height:4}}>
-        <div style={{position:"absolute",inset:0,background:B.offWhite,borderRadius:2}}/>
-        <div style={{position:"absolute",top:0,left:0,bottom:0,width:pct+"%",background:B.green,borderRadius:2,transition:"width 0.08s"}}/>
-        <input type="range" min={input.min} max={input.max} step={input.step} value={value}
-          onChange={e=>onChange(input.key,parseFloat(e.target.value))}
-          style={{position:"absolute",top:-8,left:0,width:"100%",height:20,WebkitAppearance:"none",appearance:"none",background:"transparent",outline:"none",cursor:"pointer",margin:0}}/>
+        <div style={{position:"absolute",inset:0,background:isOverridden?"#D6EDE3":B.offWhite,borderRadius:2}}/>
+        <div style={{position:"absolute",top:0,left:0,bottom:0,width:pct+"%",background:B.green,borderRadius:2,transition:"width 0.3s ease"}}/>
+        <input type="range" min={input.min} max={input.max} step={input.step} value={clampedValue}
+          onChange={isOverridden?undefined:e=>onChange(input.key,parseFloat(e.target.value))}
+          readOnly={isOverridden}
+          style={{position:"absolute",top:-8,left:0,width:"100%",height:20,WebkitAppearance:"none",appearance:"none",background:"transparent",outline:"none",cursor:isOverridden?"default":"pointer",margin:0,pointerEvents:isOverridden?"none":"auto"}}/>
       </div>
     </div>
   );
@@ -942,7 +948,6 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
   const effectiveVals = useBallparkCost ? {...vals, augmentCost: ballparkCost} : vals;
   const results=useCase.compute(effectiveVals,pct,cat.id);
   const effectiveCost = useBallparkCost ? ballparkCost : (vals.augmentCost||180000);
-  const visibleInputs = useBallparkCost ? cat.inputs.filter(inp => inp.key !== "augmentCost") : cat.inputs;
   return(
     <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:14}}>
       {/* Category header */}
@@ -957,15 +962,12 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
         {/* LEFT: inputs + scenario */}
         <div>
           <div style={{fontSize:9,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Inputs</div>
-          {visibleInputs.map(inp=>(
-            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}/>
+          {cat.inputs.map(inp=>(
+            <Slider key={inp.key} input={inp} value={vals[inp.key]??inp.default} onChange={onChange}
+              overrideValue={useBallparkCost && inp.key==="augmentCost" ? ballparkCost : undefined}
+              overrideLabel={useBallparkCost && inp.key==="augmentCost" ? "Ballpark" : undefined}
+            />
           ))}
-          {useBallparkCost && (
-            <div style={{marginTop:4,marginBottom:10,padding:"8px 10px",background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:8,color:B.greenDark,textTransform:"uppercase",fontWeight:600,letterSpacing:"0.06em"}}>Augment Cost (Ballpark)</span>
-              <span style={{fontSize:11,fontWeight:700,color:B.green}}>${Math.round(ballparkCost).toLocaleString()}/yr</span>
-            </div>
-          )}
           {/* Scenario mini-selector */}
           <div style={{marginTop:8,padding:"10px 12px",background:B.offWhite,borderRadius:4}}>
             <div style={{fontSize:8,color:B.green,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>{useCase.savingsLabel} — Scenario</div>
