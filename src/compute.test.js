@@ -1,4 +1,4 @@
-import { USE_CASES } from './App';
+import { USE_CASES, computeCreditPricing, CREDIT_PRICING_DEFAULTS, PLATFORM_TIERS } from './App';
 
 const findUseCase = (id) => USE_CASES.find(uc => uc.id === id);
 
@@ -21,15 +21,15 @@ describe('Code Review compute', () => {
   });
 
   it('quality: adds rework savings and incident value', () => {
-    const vals = { devs: 50, hoursPerWeek: 5, hourlyCost: 120, reworkRate: 20,
-      prsPerMonth: 300, incidentValue: 150000, augmentCost: 180000 };
+    const vals = { devs: 50, prsPerWeek: 75, hoursPerWeek: 5, hourlyCost: 120, reworkRate: 20,
+      incidentValue: 150000, augmentCost: 180000 };
     const r = uc.compute(vals, 0.40, 'quality');
     expect(r.timeSavings).toBe(624000);
     expect(r.reworkSavings).toBeGreaterThan(0);
-    // reworkSavings = (300*12) * (20/100) * 0.25 * 2 * 120 * 0.30 = 12,960
-    expect(r.reworkSavings).toBeCloseTo(12960, 0);
+    // reworkSavings = (75*52) * (20/100) * 0.25 * 2 * 120 * 0.40 = 18,720
+    expect(r.reworkSavings).toBeCloseTo(75*52*(20/100)*0.25*2*120*0.40, 0);
     expect(r.incidentValue).toBe(150000);
-    expect(r.totalBenefit).toBe(624000 + 12960 + 150000);
+    expect(r.totalBenefit).toBe(624000 + r.reworkSavings + 150000);
   });
 
   it('capacity: uses senior dev inputs', () => {
@@ -40,18 +40,18 @@ describe('Code Review compute', () => {
     expect(r.hoursRecovered).toBe(15 * 8 * 52 * 0.40);
   });
 
-  it('throughput: prsPerMonth slider scales time savings', () => {
-    const base = { devs: 50, prsPerMonth: 300, hoursPerWeek: 5, hourlyCost: 120, augmentCost: 180000 };
+  it('throughput: prsPerWeek slider scales time savings', () => {
+    const base = { devs: 50, prsPerWeek: 75, hoursPerWeek: 5, hourlyCost: 120, augmentCost: 180000 };
     const rBase = uc.compute(base, 0.40, 'throughput');
     // Double PRs → double savings
-    const doubled = { ...base, prsPerMonth: 600 };
+    const doubled = { ...base, prsPerWeek: 150 };
     const rDouble = uc.compute(doubled, 0.40, 'throughput');
     expect(rDouble.timeSavings).toBe(rBase.timeSavings * 2);
     expect(rDouble.hoursRecovered).toBe(rBase.hoursRecovered * 2);
     // Half PRs → half savings
-    const halved = { ...base, prsPerMonth: 150 };
+    const halved = { ...base, prsPerWeek: 37.5 };
     const rHalf = uc.compute(halved, 0.40, 'throughput');
-    expect(rHalf.timeSavings).toBe(rBase.timeSavings * 0.5);
+    expect(rHalf.timeSavings).toBeCloseTo(rBase.timeSavings * 0.5, 0);
   });
 
   it('returns correct ROI formula', () => {
@@ -68,9 +68,9 @@ describe('Unit Test compute', () => {
   const uc = findUseCase('unit-test');
 
   it('velocity: weekly test hours converted to annual savings', () => {
-    const vals = { devs: 80, testTimePct: 10, hourlyCost: 120, incidentValue: 150000, augmentCost: 250000 };
+    const vals = { devs: 80, testHoursPerWeek: 4, hourlyCost: 120, incidentValue: 150000, augmentCost: 250000 };
     const r = uc.compute(vals, 0.50, 'velocity');
-    // weeklyHours = 80*40*(10/100) = 320;  timeSavings = 320*52*120*0.50 = $998,400
+    // weeklyHours = 80*4 = 320;  timeSavings = 320*52*120*0.50 = $998,400
     expect(r.timeSavings).toBe(998400);
     expect(r.incidentValue).toBe(150000);
     expect(r.ciSavings).toBe(0);
@@ -88,7 +88,7 @@ describe('Unit Test compute', () => {
   });
 
   it('coverage: uses currentCoverage and criticalServices', () => {
-    const vals = { devs: 80, testTimePct: 10, currentCoverage: 60, criticalServices: 5,
+    const vals = { devs: 80, testHoursPerWeek: 4, currentCoverage: 60, criticalServices: 5,
       hourlyCost: 120, incidentValue: 100000, augmentCost: 250000 };
     const r = uc.compute(vals, 0.50, 'coverage');
     expect(r.ciSavings).toBe(0);
@@ -128,12 +128,13 @@ describe('Build Failure compute', () => {
   it('reliability: trunk lock + release delay, scales with pct', () => {
     const vals = { trunkLockHours: 4, devsBlocked: 50, hourlyCost: 130, releaseDelayValue: 200000, augmentCost: 200000 };
     const r = uc.compute(vals, 0.70, 'reliability');
-    expect(r.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.70 * 0.6);
-    expect(r.releaseValue).toBe(200000);
+    expect(r.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.70);
+    expect(r.releaseValue).toBe(200000 * 0.70);
     expect(r.timeSavings).toBe(0);
     // Scenario selector changes the result
     const rLow = uc.compute(vals, 0.50, 'reliability');
-    expect(rLow.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.50 * 0.6);
+    expect(rLow.trunkLockSavings).toBe(4 * 52 * 50 * 130 * 0.50);
+    expect(rLow.releaseValue).toBe(200000 * 0.50);
     expect(rLow.trunkLockSavings).toBeLessThan(r.trunkLockSavings);
   });
 });
@@ -156,8 +157,8 @@ describe('Interactive compute', () => {
     const vals = { devs: 100, hrsSavedPerWeek: 3, hourlyCost: 120,
       onboardingWeeksSaved: 2, newDevsPerYear: 20, augmentCost: 240000 };
     const r = uc.compute(vals, 0.80, 'onboarding');
-    // onboardingValue = 2 * 40 * 20 * 120 = $192,000
-    expect(r.onboardingValue).toBe(2 * 40 * 20 * 120);
+    // onboardingValue = 2 * 40 * 20 * 120 * 0.80 = $153,600
+    expect(r.onboardingValue).toBe(2 * 40 * 20 * 120 * 0.80);
     expect(r.productivityValue).toBeGreaterThan(0);
   });
 
@@ -220,6 +221,59 @@ describe('Compute results invariants', () => {
         expect(r.payback).toBeLessThan(24);
       });
     });
+  });
+});
+
+// ─── Credit Pricing compute ───
+
+describe('Credit Pricing compute', () => {
+  it('calculates defaults matching the reference pricing table', () => {
+    const r = computeCreditPricing(CREDIT_PRICING_DEFAULTS);
+    // 500 devs × 60% = 300 active
+    expect(r.activeDevs).toBe(300);
+    // Interactive: 300 × 100 × 500 = 15,000,000 credits/mo
+    expect(r.interactiveCreditsPerMonth).toBe(15000000);
+    // CR: 4000 × 1000 = 4,000,000 credits/mo
+    expect(r.crCreditsPerMonth).toBe(4000000);
+    // UT: 20000 × 250 = 5,000,000 credits/mo
+    expect(r.utCreditsPerMonth).toBe(5000000);
+    // Total: 24,000,000 credits/mo
+    expect(r.totalCreditsPerMonth).toBe(24000000);
+    // Monthly fee: 24M / 500 = $48,000
+    expect(r.monthlyCreditFee).toBe(48000);
+    // Annual credit fee: $576,000
+    expect(r.annualCreditFee).toBe(576000);
+    // Platform fee: Standard tier ($100k for ≤1000 devs)
+    expect(r.tierName).toBe("Standard");
+    expect(r.platformFee).toBe(100000);
+    // Total annual: $676,000
+    expect(r.totalAnnualFee).toBe(676000);
+  });
+
+  it('selects correct platform tier based on dev count', () => {
+    expect(computeCreditPricing({totalDevs:100}).tierName).toBe("Core");
+    expect(computeCreditPricing({totalDevs:100}).platformFee).toBe(50000);
+    expect(computeCreditPricing({totalDevs:500}).tierName).toBe("Standard");
+    expect(computeCreditPricing({totalDevs:500}).platformFee).toBe(100000);
+    expect(computeCreditPricing({totalDevs:2000}).tierName).toBe("Advanced");
+    expect(computeCreditPricing({totalDevs:2000}).platformFee).toBe(150000);
+  });
+
+  it('changing activeRatio scales interactive credits', () => {
+    const r100 = computeCreditPricing({activeRatio:100});
+    const r50 = computeCreditPricing({activeRatio:50});
+    expect(r100.interactiveCreditsPerMonth).toBe(r50.interactiveCreditsPerMonth * 2);
+  });
+
+  it('changing prsPerMonth scales CR credits', () => {
+    const base = computeCreditPricing({prsPerMonth:4000});
+    const doubled = computeCreditPricing({prsPerMonth:8000});
+    expect(doubled.crCreditsPerMonth).toBe(base.crCreditsPerMonth * 2);
+  });
+
+  it('interactive dollars per month = interactive credits / creditsPerDollar', () => {
+    const r = computeCreditPricing(CREDIT_PRICING_DEFAULTS);
+    expect(r.interactiveDollarsPerMonth).toBe(r.interactiveCreditsPerMonth / r.creditsPerDollar);
   });
 });
 

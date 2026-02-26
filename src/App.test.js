@@ -160,10 +160,12 @@ describe('Summary tab', () => {
     expect(screen.getByText('Benefit Distribution')).toBeInTheDocument();
   });
 
-  it('shows export PDF button', () => {
+  it('shows export buttons', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Summary'));
-    expect(screen.getByText(/Export to PDF/)).toBeInTheDocument();
+    expect(screen.getByText(/PDF/)).toBeInTheDocument();
+    expect(screen.getByText(/PowerPoint/)).toBeInTheDocument();
+    expect(screen.getByText(/Excel/)).toBeInTheDocument();
   });
 });
 
