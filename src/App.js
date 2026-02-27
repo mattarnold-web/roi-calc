@@ -669,8 +669,8 @@ async function generatePPTX(allCatResults, customerName, enabled, enabledCats, c
   pptx.title = customerName ? customerName+" — Augment Code ROI" : "Augment Code ROI Analysis";
 
   // Brand colors
-  const GRN = "158158", BLK = "0D0D0D", WHT = "FFFFFF", GRY = "888888", DKGRY = "444444";
-  const GRNBG = "EBF5F0", GRNBRT = "22C97A", GRNDARK = "0D6B48";
+  const GRN = "158158", BLK = "0D0D0D", WHT = "FFFFFF", GRY = "888888"; // eslint-disable-line no-unused-vars
+  const GRNBG = "EBF5F0", GRNBRT = "22C97A"; // eslint-disable-line no-unused-vars
 
   // Build totals
   const useCaseMap = {};
@@ -686,7 +686,7 @@ async function generatePPTX(allCatResults, customerName, enabled, enabledCats, c
   const grandROI = grandCost > 0 ? ((grandTotal-grandCost)/grandCost)*100 : 0;
   const grandPayback = grandCost > 0 ? grandCost/(grandTotal/12) : 0;
   const grandFTE = allCatResults.reduce((s,r) => s+(r.results.fteEquivalent||0), 0);
-  const grandHours = allCatResults.reduce((s,r) => s+(r.results.hoursRecovered||0), 0);
+  const grandHours = allCatResults.reduce((s,r) => s+(r.results.hoursRecovered||0), 0); // eslint-disable-line no-unused-vars
   const useCaseCount = Object.keys(useCaseMap).length;
   const SLabels = ["Conservative","Midpoint","Optimistic"];
 
@@ -2010,7 +2010,7 @@ function ROICalculator(){
   },[]);
 
   // Compute credit pricing (always computed for display; toggle controls whether it's used in ROI)
-  const totalDevs = extractTotalDevs(USE_CASES, enabled, enabledCats, catValues);
+  const totalDevs = extractTotalDevs(USE_CASES, enabled, enabledCats, catValues); // eslint-disable-line no-unused-vars
   const pricing = computeCreditPricing({...pricingInputs, totalDevs: pricingInputs.totalDevs});
   const selectedPricingCost = pricing.totalAnnualFee;
 
