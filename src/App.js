@@ -1305,20 +1305,22 @@ function CreditPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, 
 }
 
 function Slider({input,value,onChange,overrideValue,overrideLabel,onHide}){
-  const [editing,setEditing]=useState(false);
-  const [editText,setEditText]=useState("");
+  const [localText,setLocalText]=useState("");
+  const [focused,setFocused]=useState(false);
   const displayValue = overrideValue != null ? overrideValue : value;
   const clampedValue = Math.min(Math.max(displayValue, input.min), input.max);
   const pct=((clampedValue-input.min)/(input.max-input.min))*100;
   const isOverridden = overrideValue != null;
-  const dv=input.unit==="$"?"$"+Math.round(displayValue).toLocaleString():input.unit==="%"?displayValue+"%":input.unit==="$/hr"?"$"+displayValue+"/hr":input.unit==="hrs"?displayValue+" hrs":input.unit==="wks"?displayValue+" wks":Math.round(displayValue).toLocaleString();
-  const commitEdit=()=>{
-    const parsed=parseFloat(editText);
+  const unitSuffix=input.unit==="$"?"":input.unit==="%"?"%":input.unit==="$/hr"?"/hr":input.unit==="hrs"?" hrs":input.unit==="wks"?" wks":"";
+  const unitPrefix=input.unit==="$"||input.unit==="$/hr"?"$":"";
+  const formattedDisplay=unitPrefix+Math.round(displayValue).toLocaleString()+unitSuffix;
+  const commitText=(text)=>{
+    const parsed=parseFloat(text);
     if(!isNaN(parsed)){
       const clamped=Math.min(Math.max(parsed,input.min),input.max);
       onChange(input.key,clamped);
     }
-    setEditing(false);
+    setFocused(false);
   };
   return(
     <div style={{marginBottom:14,opacity:isOverridden?0.85:1}}>
@@ -1329,17 +1331,26 @@ function Slider({input,value,onChange,overrideValue,overrideLabel,onHide}){
             {input.label}{isOverridden&&overrideLabel?<span style={{fontSize:8,color:B.green,marginLeft:6,fontWeight:600}}>({overrideLabel})</span>:null}
           </label>
         </div>
-        {!isOverridden&&editing?(
-          <input type="number" autoFocus value={editText}
-            onChange={e=>setEditText(e.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={e=>{if(e.key==="Enter")commitEdit();if(e.key==="Escape")setEditing(false);}}
-            min={input.min} max={input.max} step={input.step}
-            style={{width:90,textAlign:"right",fontSize:13,fontWeight:700,color:B.green,border:`1px solid ${B.green}`,borderRadius:3,padding:"1px 6px",outline:"none",background:B.greenBg,fontFamily:"'Roboto Mono',monospace"}}/>
+        {isOverridden?(
+          <span style={{fontSize:13,fontWeight:700,color:B.green}}>{formattedDisplay}</span>
         ):(
-          <span onClick={()=>{if(!isOverridden){setEditText(String(displayValue));setEditing(true);}}}
-            style={{fontSize:13,fontWeight:700,color:B.green,cursor:isOverridden?"default":"pointer",borderBottom:isOverridden?"none":`1px dashed ${B.green}40`}}
-            title={isOverridden?undefined:"Click to type a value"}>{dv}</span>
+          <div style={{display:"flex",alignItems:"baseline",gap:2}}>
+            {unitPrefix&&<span style={{fontSize:11,fontWeight:600,color:B.green}}>{unitPrefix}</span>}
+            <input type="number"
+              value={focused?localText:displayValue}
+              onFocus={()=>{setLocalText(String(displayValue));setFocused(true);}}
+              onBlur={()=>commitText(localText)}
+              onChange={e=>setLocalText(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"){commitText(localText);e.target.blur();}if(e.key==="Escape"){setFocused(false);}}}
+              min={input.min} max={input.max} step={input.step}
+              style={{width:72,textAlign:"right",fontSize:13,fontWeight:700,color:B.green,
+                border:focused?`1px solid ${B.green}`:`1px solid #E0E0E0`,
+                borderRadius:3,padding:"2px 6px",outline:"none",
+                background:focused?B.greenBg:B.white,
+                fontFamily:"'Roboto Mono',monospace",
+                transition:"border 0.15s, background 0.15s"}}/>
+            {unitSuffix&&<span style={{fontSize:10,fontWeight:600,color:B.gray}}>{unitSuffix}</span>}
+          </div>
         )}
       </div>
       <div style={{position:"relative",height:4}}>
@@ -1430,7 +1441,7 @@ function ThresholdMeter({threshold,value,onChange}){
 
 // ─── CATEGORY PANEL (one per enabled category) ───
 
-function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly,effectiveCost,hiddenInputKeys,hiddenMetricKeys,onHideInput,onRestoreInput,onHideMetric,onRestoreMetric}){
+function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onRemove,isOnly,effectiveCost,hiddenInputKeys,hiddenMetricKeys,onHideInput,onRestoreInput,onHideMetric,onRestoreMetric,netBenefitHidden,onHideNetBenefit,onRestoreNetBenefit}){
   const pct=useCase.savingsRange[scenarioIdx];
   // For hidden inputs, use default values in computation
   const computeVals = {...vals};
@@ -1508,10 +1519,19 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {visibleMetrics.map(m=><MetricCard key={m.key} metric={m} value={results[m.key]} onHide={()=>onHideMetric(m.key)}/>)}
           </div>
-          <div style={{marginTop:10,padding:"8px 10px",background:results.totalBenefit>effectiveCost?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>effectiveCost?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase"}}>Net Benefit</span>
-            <span style={{fontSize:14,fontWeight:700,color:results.totalBenefit>effectiveCost?B.greenDark:B.red}}>${Math.round(results.totalBenefit-effectiveCost).toLocaleString()}</span>
-          </div>
+          {netBenefitHidden?(
+            <button onClick={onRestoreNetBenefit} style={{marginTop:10,width:"100%",padding:"6px 10px",background:B.white,border:`1px dashed ${B.green}`,borderRadius:4,cursor:"pointer",color:B.green,fontSize:8,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em"}}>
+              + Show Net Benefit
+            </button>
+          ):(
+            <div style={{marginTop:10,padding:"8px 10px",background:results.totalBenefit>effectiveCost?B.greenBg:B.redBg,border:`1px solid ${results.totalBenefit>effectiveCost?B.green:B.red}`,borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <button onClick={onHideNetBenefit} title="Hide Net Benefit" style={{background:"rgba(0,0,0,0.08)",border:"none",borderRadius:3,cursor:"pointer",color:"#888",fontSize:11,padding:"1px 4px",lineHeight:1}}>×</button>
+                <span style={{fontSize:9,color:B.darkGray,textTransform:"uppercase"}}>Net Benefit</span>
+              </div>
+              <span style={{fontSize:14,fontWeight:700,color:results.totalBenefit>effectiveCost?B.greenDark:B.red}}>${Math.round(results.totalBenefit-effectiveCost).toLocaleString()}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1520,7 +1540,7 @@ function CategoryPanel({useCase,cat,vals,onChange,scenarioIdx,setScenarioIdx,onR
 
 // ─── USE CASE TAB (multi-category) ───
 
-function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot,platformCost,hiddenInputs,hiddenMetrics,onHideInput,onRestoreInput,onHideMetric,onRestoreMetric}){
+function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,onScenarioChange,onToggleCat,thresholds,onThresholdChange,showPilot,onTogglePilot,platformCost,hiddenInputs,hiddenMetrics,onHideInput,onRestoreInput,onHideMetric,onRestoreMetric,hiddenNetBenefit,onHideNetBenefit,onRestoreNetBenefit}){
   // Compute results for each enabled category
   const catResults=enabledCats.map(catId=>{
     const cat=useCase.evalCategories.find(c=>c.id===catId);
@@ -1621,6 +1641,9 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
             onRestoreInput={key=>onRestoreInput(catId,key)}
             onHideMetric={onHideMetric}
             onRestoreMetric={onRestoreMetric}
+            netBenefitHidden={(hiddenNetBenefit||[]).includes(catId)}
+            onHideNetBenefit={()=>onHideNetBenefit(catId)}
+            onRestoreNetBenefit={()=>onRestoreNetBenefit(catId)}
           />
         ))}
         {/* Combined Use Case Summary (when multiple categories) */}
@@ -1968,6 +1991,7 @@ function ROICalculator(){
 
   const [hiddenInputs,setHiddenInputs]=useState({});
   const [hiddenMetrics,setHiddenMetrics]=useState({});
+  const [hiddenNetBenefit,setHiddenNetBenefit]=useState({});
 
   const handleHideInput=useCallback((useCaseId,catId,key)=>{
     setHiddenInputs(prev=>{
@@ -1995,6 +2019,20 @@ function ROICalculator(){
   const handleRestoreMetric=useCallback((useCaseId,key)=>{
     setHiddenMetrics(prev=>{
       const uc=(prev[useCaseId]||[]).filter(k=>k!==key);
+      return {...prev,[useCaseId]:uc};
+    });
+  },[]);
+
+  const handleHideNetBenefit=useCallback((useCaseId,catId)=>{
+    setHiddenNetBenefit(prev=>{
+      const uc=prev[useCaseId]||[];
+      return {...prev,[useCaseId]:[...uc,catId]};
+    });
+  },[]);
+
+  const handleRestoreNetBenefit=useCallback((useCaseId,catId)=>{
+    setHiddenNetBenefit(prev=>{
+      const uc=(prev[useCaseId]||[]).filter(c=>c!==catId);
       return {...prev,[useCaseId]:uc};
     });
   },[]);
@@ -2190,6 +2228,9 @@ function ROICalculator(){
             onRestoreInput={(catId,key)=>handleRestoreInput(activeUseCase.id,catId,key)}
             onHideMetric={key=>handleHideMetric(activeUseCase.id,key)}
             onRestoreMetric={key=>handleRestoreMetric(activeUseCase.id,key)}
+            hiddenNetBenefit={hiddenNetBenefit[activeUseCase.id]||[]}
+            onHideNetBenefit={catId=>handleHideNetBenefit(activeUseCase.id,catId)}
+            onRestoreNetBenefit={catId=>handleRestoreNetBenefit(activeUseCase.id,catId)}
           />
         ):(
           <DisabledTab useCase={activeUseCase} onEnable={()=>setEnabled(prev=>({...prev,[activeUseCase.id]:true}))}/>
