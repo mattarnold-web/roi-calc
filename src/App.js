@@ -22,7 +22,7 @@ export const USE_CASES = [
         desc:"Focus on PR volume, cycle time, and merge velocity",
         inputs:[
           {key:"devs",label:"Engineers in review",default:50,min:1,max:5000,step:1,unit:""},
-          {key:"prsPerWeek",label:"PRs per week (org-wide)",default:75,min:1,max:10000,step:5,unit:""},
+          {key:"prsPerWeek",label:"PRs per week (org-wide)",default:75,min:1,max:10000,step:1,unit:""},
           {key:"hoursPerWeek",label:"Hours/week per engineer on review",default:5,min:0.5,max:40,step:0.5,unit:"hrs"},
           {key:"hourlyCost",label:"Fully loaded engineer cost",default:120,min:50,max:400,step:5,unit:"$/hr"},
           {key:"augmentCost",label:"Estimated annual Augment cost",default:180000,min:10000,max:5000000,step:5000,unit:"$"},
@@ -33,7 +33,7 @@ export const USE_CASES = [
         desc:"Focus on bug prevention, incidents, and change failure rate",
         inputs:[
           {key:"devs",label:"Engineers in review",default:50,min:1,max:5000,step:1,unit:""},
-          {key:"prsPerWeek",label:"PRs per week (org-wide)",default:75,min:1,max:10000,step:5,unit:""},
+          {key:"prsPerWeek",label:"PRs per week (org-wide)",default:75,min:1,max:10000,step:1,unit:""},
           {key:"hoursPerWeek",label:"Hours/week per engineer on review",default:5,min:0.5,max:40,step:0.5,unit:"hrs"},
           {key:"reworkRate",label:"% PRs requiring major rework cycles",default:20,min:0,max:80,step:1,unit:"%"},
           {key:"incidentValue",label:"Annual value of avoided incidents",default:150000,min:0,max:5000000,step:10000,unit:"$"},
@@ -545,11 +545,12 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
       const vals = catValues[useCase.id]?.[catId] || {};
       const si = catScenarios[useCase.id]?.[catId] ?? 1;
       const pct = useCase.savingsRange[si];
-      const results = useCase.compute(vals, pct, catId);
-      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost:vals.augmentCost||180000};
+      const effectiveVals = usePricingCost ? {...vals, augmentCost: selectedPricingCost} : vals;
+      const results = useCase.compute(effectiveVals, pct, catId);
+      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost: usePricingCost ? selectedPricingCost : (vals.augmentCost||180000)};
     });
     const ucBenefit = catResults.reduce((s,r) => s+r.results.totalBenefit, 0);
-    const ucCost = Math.max(...catResults.map(r => r.augmentCost), 0);
+    const ucCost = usePricingCost ? selectedPricingCost : Math.max(...catResults.map(r => r.augmentCost), 0);
     const roiMultiple = ucCost > 0 ? (ucBenefit/ucCost).toFixed(1) : "0";
 
     // Header
@@ -821,11 +822,12 @@ async function generatePPTX(allCatResults, customerName, enabled, enabledCats, c
       const vals = catValues[useCase.id]?.[catId] || {};
       const si = catScenarios[useCase.id]?.[catId] ?? 1;
       const pct = useCase.savingsRange[si];
-      const results = useCase.compute(vals, pct, catId);
-      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost:vals.augmentCost||180000};
+      const effectiveVals = usePricingCost ? {...vals, augmentCost: selectedPricingCost} : vals;
+      const results = useCase.compute(effectiveVals, pct, catId);
+      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost: usePricingCost ? selectedPricingCost : (vals.augmentCost||180000)};
     });
     const ucBenefit = catResults.reduce((s,r) => s+r.results.totalBenefit, 0);
-    const ucCost = Math.max(...catResults.map(r => r.augmentCost), 0);
+    const ucCost = usePricingCost ? selectedPricingCost : Math.max(...catResults.map(r => r.augmentCost), 0);
     const roiMultiple = ucCost > 0 ? (ucBenefit/ucCost).toFixed(1) : "0";
 
     // Header
@@ -981,7 +983,8 @@ async function generateExcel(allCatResults, customerName, enabled, enabledCats, 
       const vals = catValues[useCase.id]?.[catId] || {};
       const si = catScenarios[useCase.id]?.[catId] ?? 1;
       const pct = useCase.savingsRange[si];
-      const results = useCase.compute(vals, pct, catId);
+      const effectiveVals = usePricingCost ? {...vals, augmentCost: selectedPricingCost} : vals;
+      const results = useCase.compute(effectiveVals, pct, catId);
 
       rows.push(["CATEGORY: "+cat.label+" ("+SLabels[si]+" — "+Math.round(pct*100)+"%)"]);
       rows.push([]);
@@ -1302,11 +1305,21 @@ function CreditPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, 
 }
 
 function Slider({input,value,onChange,overrideValue,overrideLabel,onHide}){
+  const [editing,setEditing]=useState(false);
+  const [editText,setEditText]=useState("");
   const displayValue = overrideValue != null ? overrideValue : value;
   const clampedValue = Math.min(Math.max(displayValue, input.min), input.max);
   const pct=((clampedValue-input.min)/(input.max-input.min))*100;
   const isOverridden = overrideValue != null;
   const dv=input.unit==="$"?"$"+Math.round(displayValue).toLocaleString():input.unit==="%"?displayValue+"%":input.unit==="$/hr"?"$"+displayValue+"/hr":input.unit==="hrs"?displayValue+" hrs":input.unit==="wks"?displayValue+" wks":Math.round(displayValue).toLocaleString();
+  const commitEdit=()=>{
+    const parsed=parseFloat(editText);
+    if(!isNaN(parsed)){
+      const clamped=Math.min(Math.max(parsed,input.min),input.max);
+      onChange(input.key,clamped);
+    }
+    setEditing(false);
+  };
   return(
     <div style={{marginBottom:14,opacity:isOverridden?0.85:1}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
@@ -1316,7 +1329,18 @@ function Slider({input,value,onChange,overrideValue,overrideLabel,onHide}){
             {input.label}{isOverridden&&overrideLabel?<span style={{fontSize:8,color:B.green,marginLeft:6,fontWeight:600}}>({overrideLabel})</span>:null}
           </label>
         </div>
-        <span style={{fontSize:13,fontWeight:700,color:B.green}}>{dv}</span>
+        {!isOverridden&&editing?(
+          <input type="number" autoFocus value={editText}
+            onChange={e=>setEditText(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={e=>{if(e.key==="Enter")commitEdit();if(e.key==="Escape")setEditing(false);}}
+            min={input.min} max={input.max} step={input.step}
+            style={{width:90,textAlign:"right",fontSize:13,fontWeight:700,color:B.green,border:`1px solid ${B.green}`,borderRadius:3,padding:"1px 6px",outline:"none",background:B.greenBg,fontFamily:"'Roboto Mono',monospace"}}/>
+        ):(
+          <span onClick={()=>{if(!isOverridden){setEditText(String(displayValue));setEditing(true);}}}
+            style={{fontSize:13,fontWeight:700,color:B.green,cursor:isOverridden?"default":"pointer",borderBottom:isOverridden?"none":`1px dashed ${B.green}40`}}
+            title={isOverridden?undefined:"Click to type a value"}>{dv}</span>
+        )}
       </div>
       <div style={{position:"relative",height:4}}>
         <div style={{position:"absolute",inset:0,background:isOverridden?"#D6EDE3":B.offWhite,borderRadius:2}}/>
@@ -1503,13 +1527,13 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
     const vals=catValues[catId]||{};
     const si=catScenarios[catId]??1;
     const pct=useCase.savingsRange[si];
-    const effectiveVals = {...vals, augmentCost: platformCost};
+    const effectiveVals = platformCost != null ? {...vals, augmentCost: platformCost} : vals;
     const results=useCase.compute(effectiveVals,pct,catId);
     return {cat,catId,vals,scenarioIdx:si,pct,results};
   });
   // Combined totals across all enabled categories
   const combinedBenefit=catResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const combinedCost=platformCost;
+  const combinedCost=platformCost != null ? platformCost : Math.max(...enabledCats.map(catId=>(catValues[catId]||{}).augmentCost||180000));
   const combinedROI=combinedCost>0?((combinedBenefit-combinedCost)/combinedCost)*100:0;
   const combinedHours=catResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
   const combinedFTE=combinedHours/2080;
@@ -2159,7 +2183,7 @@ function ROICalculator(){
             onThresholdChange={handleThresholdChange}
             showPilot={showPilot[activeUseCase.id]??true}
             onTogglePilot={()=>handleTogglePilot(activeUseCase.id)}
-            platformCost={selectedPricingCost}
+            platformCost={usePricingCost ? selectedPricingCost : null}
             hiddenInputs={hiddenInputs[activeUseCase.id]||{}}
             hiddenMetrics={hiddenMetrics[activeUseCase.id]||[]}
             onHideInput={(catId,key)=>handleHideInput(activeUseCase.id,catId,key)}
