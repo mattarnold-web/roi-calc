@@ -545,11 +545,12 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
       const vals = catValues[useCase.id]?.[catId] || {};
       const si = catScenarios[useCase.id]?.[catId] ?? 1;
       const pct = useCase.savingsRange[si];
-      const results = useCase.compute(vals, pct, catId);
-      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost:vals.augmentCost||180000};
+      const effectiveVals = usePricingCost ? {...vals, augmentCost: selectedPricingCost} : vals;
+      const results = useCase.compute(effectiveVals, pct, catId);
+      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost: usePricingCost ? selectedPricingCost : (vals.augmentCost||180000)};
     });
     const ucBenefit = catResults.reduce((s,r) => s+r.results.totalBenefit, 0);
-    const ucCost = Math.max(...catResults.map(r => r.augmentCost), 0);
+    const ucCost = usePricingCost ? selectedPricingCost : Math.max(...catResults.map(r => r.augmentCost), 0);
     const roiMultiple = ucCost > 0 ? (ucBenefit/ucCost).toFixed(1) : "0";
 
     // Header
@@ -821,11 +822,12 @@ async function generatePPTX(allCatResults, customerName, enabled, enabledCats, c
       const vals = catValues[useCase.id]?.[catId] || {};
       const si = catScenarios[useCase.id]?.[catId] ?? 1;
       const pct = useCase.savingsRange[si];
-      const results = useCase.compute(vals, pct, catId);
-      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost:vals.augmentCost||180000};
+      const effectiveVals = usePricingCost ? {...vals, augmentCost: selectedPricingCost} : vals;
+      const results = useCase.compute(effectiveVals, pct, catId);
+      return {cat, catId, vals, scenarioIdx:si, pct, results, augmentCost: usePricingCost ? selectedPricingCost : (vals.augmentCost||180000)};
     });
     const ucBenefit = catResults.reduce((s,r) => s+r.results.totalBenefit, 0);
-    const ucCost = Math.max(...catResults.map(r => r.augmentCost), 0);
+    const ucCost = usePricingCost ? selectedPricingCost : Math.max(...catResults.map(r => r.augmentCost), 0);
     const roiMultiple = ucCost > 0 ? (ucBenefit/ucCost).toFixed(1) : "0";
 
     // Header
@@ -981,7 +983,8 @@ async function generateExcel(allCatResults, customerName, enabled, enabledCats, 
       const vals = catValues[useCase.id]?.[catId] || {};
       const si = catScenarios[useCase.id]?.[catId] ?? 1;
       const pct = useCase.savingsRange[si];
-      const results = useCase.compute(vals, pct, catId);
+      const effectiveVals = usePricingCost ? {...vals, augmentCost: selectedPricingCost} : vals;
+      const results = useCase.compute(effectiveVals, pct, catId);
 
       rows.push(["CATEGORY: "+cat.label+" ("+SLabels[si]+" — "+Math.round(pct*100)+"%)"]);
       rows.push([]);
@@ -1503,13 +1506,13 @@ function UseCaseTab({useCase,enabledCats,catValues,catScenarios,onValueChange,on
     const vals=catValues[catId]||{};
     const si=catScenarios[catId]??1;
     const pct=useCase.savingsRange[si];
-    const effectiveVals = {...vals, augmentCost: platformCost};
+    const effectiveVals = platformCost != null ? {...vals, augmentCost: platformCost} : vals;
     const results=useCase.compute(effectiveVals,pct,catId);
     return {cat,catId,vals,scenarioIdx:si,pct,results};
   });
   // Combined totals across all enabled categories
   const combinedBenefit=catResults.reduce((s,r)=>s+r.results.totalBenefit,0);
-  const combinedCost=platformCost;
+  const combinedCost=platformCost != null ? platformCost : Math.max(...enabledCats.map(catId=>(catValues[catId]||{}).augmentCost||180000));
   const combinedROI=combinedCost>0?((combinedBenefit-combinedCost)/combinedCost)*100:0;
   const combinedHours=catResults.reduce((s,r)=>s+(r.results.hoursRecovered||0),0);
   const combinedFTE=combinedHours/2080;
@@ -2159,7 +2162,7 @@ function ROICalculator(){
             onThresholdChange={handleThresholdChange}
             showPilot={showPilot[activeUseCase.id]??true}
             onTogglePilot={()=>handleTogglePilot(activeUseCase.id)}
-            platformCost={selectedPricingCost}
+            platformCost={usePricingCost ? selectedPricingCost : null}
             hiddenInputs={hiddenInputs[activeUseCase.id]||{}}
             hiddenMetrics={hiddenMetrics[activeUseCase.id]||[]}
             onHideInput={(catId,key)=>handleHideInput(activeUseCase.id,catId,key)}
