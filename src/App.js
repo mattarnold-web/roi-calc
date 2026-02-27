@@ -515,10 +515,10 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     doc.setDrawColor(...green); doc.setLineWidth(1.5); doc.rect(margin-4, sy-4, W-margin*2+8, 80, "S");
     txt("AUGMENT CREDIT PRICING ESTIMATOR", margin+4, sy+10, {size:7, color:green, bold:true});
     const bw = (W - margin*2 - 36) / 4;
-    [{l:"Platform Tier",v:pricing.tierName+" ($"+(pricing.platformFee/1000)+"k/yr)",s:"Up to "+pricing.maxDevs+" devs"},
+    [{l:"Platform Tier",v:pricing.tierName+" ($"+(pricing.basePlatformFee/1000)+"k/yr)",s:pricing.tierDesc+(pricing.automationFee>0?" + $"+(pricing.automationFee/1000)+"k automation":"")},
      {l:"Monthly Credit Fee",v:"$"+Math.round(pricing.monthlyCreditFee).toLocaleString()+"/mo",s:formatCredits(pricing.totalCreditsPerMonth)+" credits/mo"},
      {l:"Annual Credit Fee",v:"$"+Math.round(pricing.annualCreditFee).toLocaleString()+"/yr",s:"12 × monthly"},
-     {l:"Total Annual Fee",v:"$"+Math.round(pricing.totalAnnualFee).toLocaleString()+"/yr",s:"Platform + credits"},
+     {l:"Total Annual Fee",v:"$"+Math.round(pricing.totalAnnualFee).toLocaleString()+"/yr",s:"Platform"+(pricing.automationFee>0?" + automation":"")+" + credits"},
     ].forEach((b,i) => {
       const bx = margin + 4 + i*(bw+12);
       txt(b.l, bx, sy+26, {size:6, color:green, bold:true});
@@ -1023,8 +1023,10 @@ async function generateExcel(allCatResults, customerName, enabled, enabledCats, 
       [],
       ["Total Developers", pricing.totalDevs],
       ["Active Developers (Interactive)", pricing.activeDevs],
-      ["Platform Tier", pricing.tierName],
-      ["Platform Fee ($/yr)", pricing.platformFee],
+      ["Platform Tier", pricing.tierName+" — "+pricing.tierDesc],
+      ["Base Platform Fee ($/yr)", pricing.basePlatformFee],
+      ...(pricing.automationAddOns>0?[["Custom Automation Add-ons", pricing.automationAddOns+" × $50k = $"+pricing.automationFee.toLocaleString()]]:[]),
+      ["Total Platform Fee ($/yr)", pricing.platformFee],
       [],
       ["Category", "Quantity/mo", "Credits/unit", "Credits/mo", "$/mo"],
       ["Interactive", pricing.activeDevs+"×activities", "", Math.round(pricing.interactiveCreditsPerMonth), Math.round(pricing.interactiveDollarsPerMonth)],
@@ -1034,7 +1036,9 @@ async function generateExcel(allCatResults, customerName, enabled, enabledCats, 
       [],
       ["Monthly Credit Fee", Math.round(pricing.monthlyCreditFee)],
       ["Annual Credit Fee", Math.round(pricing.annualCreditFee)],
-      ["Platform Fee", Math.round(pricing.platformFee)],
+      ["Base Platform Fee", Math.round(pricing.basePlatformFee)],
+      ...(pricing.automationFee>0?[["Automation Add-on Fee", Math.round(pricing.automationFee)]]:[]),
+      ["Total Platform Fee", Math.round(pricing.platformFee)],
       ["Total Annual Fee", Math.round(pricing.totalAnnualFee)],
       [],
       ["* This is an illustrative estimate only, not a binding quote."],
@@ -1065,21 +1069,23 @@ const SL=["Conservative","Midpoint","Optimistic"];
 // ─── CREDIT-BASED PRICING MODEL ───
 
 export const PLATFORM_TIERS = [
-  { name:"Core", fee:50000, maxDevs:200 },
-  { name:"Standard", fee:100000, maxDevs:1000 },
-  { name:"Advanced", fee:150000, maxDevs:Infinity },
+  { name:"Core", fee:50000, maxDevs:200, desc:"Up to 200 developers" },
+  { name:"Standard", fee:100000, maxDevs:1000, desc:"Up to 1,000 developers" },
+  { name:"Advanced", fee:150000, maxDevs:Infinity, desc:"Unlimited developers" },
 ];
 
 export const CREDIT_PRICING_DEFAULTS = {
+  platformTier: 1,            // index into PLATFORM_TIERS (0=Core,1=Standard,2=Advanced)
+  automationAddOns: 0,        // number of Custom Automation add-ons ($50k each)
   totalDevs: 500,
-  activeRatio: 60,          // % of devs active in Augment (interactive)
-  activitiesPerMonth: 100,  // interactive activities per user per month
-  creditsPerActivity: 500,  // credits per interactive activity
-  prsPerMonth: 4000,        // PRs for code review per month
-  creditsPerPR: 1000,       // credits per PR automation
-  testsPerMonth: 20000,     // unit tests generated per month
-  creditsPerTest: 250,      // credits per test automation
-  creditsPerDollar: 500,    // fixed: $1 = 500 enterprise credits
+  activeRatio: 60,            // % of devs active in Augment (interactive)
+  activitiesPerMonth: 100,    // interactive activities per user per month
+  creditsPerActivity: 500,    // credits per interactive activity
+  prsPerMonth: 4000,          // PRs for code review per month
+  creditsPerPR: 1000,         // credits per PR automation
+  testsPerMonth: 20000,       // unit tests generated per month
+  creditsPerTest: 250,        // credits per test automation
+  creditsPerDollar: 500,      // fixed: $1 = 500 enterprise credits
 };
 
 export function extractTotalDevs(useCases, enabled, enabledCats, catValues) {
@@ -1102,8 +1108,11 @@ export function extractTotalDevs(useCases, enabled, enabledCats, catValues) {
 export function computeCreditPricing(config) {
   const c = { ...CREDIT_PRICING_DEFAULTS, ...config };
 
-  // Platform tier based on total devs
-  const tier = PLATFORM_TIERS.find(t => c.totalDevs <= t.maxDevs) || PLATFORM_TIERS[2];
+  // Fixed platform tier selection (user picks, not auto-detected)
+  const tier = PLATFORM_TIERS[c.platformTier] || PLATFORM_TIERS[1];
+
+  // Custom Automation add-on ($50k/yr per automation)
+  const automationFee = (c.automationAddOns || 0) * 50000;
 
   // Interactive credits
   const activeDevs = Math.round(c.totalDevs * (c.activeRatio / 100));
@@ -1119,14 +1128,19 @@ export function computeCreditPricing(config) {
   const totalCreditsPerMonth = interactiveCreditsPerMonth + nonInteractiveCreditsPerMonth;
   const monthlyCreditFee = totalCreditsPerMonth / c.creditsPerDollar;
   const annualCreditFee = monthlyCreditFee * 12;
-  const platformFee = tier.fee;
+  const platformFee = tier.fee + automationFee;
   const totalAnnualFee = annualCreditFee + platformFee;
 
   return {
     // Tier
     tierName: tier.name,
+    tierIndex: c.platformTier,
+    basePlatformFee: tier.fee,
+    automationAddOns: c.automationAddOns || 0,
+    automationFee,
     platformFee,
     maxDevs: tier.maxDevs === Infinity ? "Unlimited" : tier.maxDevs,
+    tierDesc: tier.desc,
     totalDevs: c.totalDevs,
     activeDevs,
     // Interactive
@@ -1186,16 +1200,59 @@ function CreditPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, 
             {usePricingCost?"Included in ROI":"Excluded from ROI"}
           </button>
         </div>
-        <div style={{fontSize:9,color:B.gray}}>{pricing.totalDevs} total devs · {pricing.activeDevs} active ({pricingInputs.activeRatio}%)</div>
+        <div style={{fontSize:9,color:B.gray}}>{pricing.tierName} tier · {pricing.totalDevs} devs · {pricing.activeDevs} active ({pricingInputs.activeRatio}%)</div>
+      </div>
+
+      {/* Platform Tier Selector */}
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:8,color:B.green,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Platform Tier <span style={{color:B.gray,fontWeight:500,fontStyle:"italic"}}> — auto-selects based on developer count, or pick manually</span></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+          {PLATFORM_TIERS.map((t,i)=>{
+            const recommendedIdx = PLATFORM_TIERS.findIndex(pt=>pricingInputs.totalDevs<=pt.maxDevs);
+            const isRecommended = i===(recommendedIdx>=0?recommendedIdx:PLATFORM_TIERS.length-1);
+            return(
+            <button key={t.name} onClick={()=>onInputChange("platformTier",i)} style={{
+              padding:"10px 12px",borderRadius:4,cursor:"pointer",textAlign:"left",
+              border:`2px solid ${pricing.tierIndex===i?B.green:"#E0E0E0"}`,
+              background:pricing.tierIndex===i?B.greenBg:B.offWhite,
+              transition:"all 0.15s",position:"relative",
+            }}>
+              {isRecommended&&pricing.tierIndex===i&&<span style={{position:"absolute",top:-7,right:8,fontSize:7,fontWeight:700,color:B.white,background:B.green,borderRadius:3,padding:"1px 5px",letterSpacing:"0.04em"}}>AUTO</span>}
+              {isRecommended&&pricing.tierIndex!==i&&<span style={{position:"absolute",top:-7,right:8,fontSize:7,fontWeight:600,color:B.green,background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:3,padding:"0px 4px",letterSpacing:"0.04em"}}>REC</span>}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                <div style={{fontSize:11,fontWeight:700,color:pricing.tierIndex===i?B.greenDark:B.black}}>{t.name}</div>
+                <div style={{fontSize:12,fontWeight:700,color:pricing.tierIndex===i?B.green:B.darkGray}}>${(t.fee/1000).toFixed(0)}k<span style={{fontSize:8,fontWeight:500}}>/yr</span></div>
+              </div>
+              <div style={{fontSize:8,color:B.gray,marginTop:2}}>{t.desc}</div>
+            </button>
+            );
+          })}
+        </div>
+
+        {/* Custom Automation Add-on */}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:B.offWhite,borderRadius:4,border:`1px solid ${pricing.automationAddOns>0?B.green:"#E8E8E8"}`}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:9,fontWeight:700,color:pricing.automationAddOns>0?B.greenDark:B.darkGray}}>Custom Automation Add-on</div>
+            <div style={{fontSize:8,color:B.gray}}>$50k/yr per automation · paired with {pricing.tierName}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <button onClick={()=>onInputChange("automationAddOns",Math.max(0,pricingInputs.automationAddOns-1))}
+              disabled={pricingInputs.automationAddOns<=0}
+              style={{width:22,height:22,borderRadius:3,border:`1px solid ${pricingInputs.automationAddOns>0?B.green:"#D0D0D0"}`,background:B.white,cursor:pricingInputs.automationAddOns>0?"pointer":"default",fontSize:13,fontWeight:700,color:pricingInputs.automationAddOns>0?B.green:"#CCC",display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+            <span style={{fontSize:13,fontWeight:700,color:pricing.automationAddOns>0?B.green:B.gray,minWidth:18,textAlign:"center"}}>{pricingInputs.automationAddOns}</span>
+            <button onClick={()=>onInputChange("automationAddOns",pricingInputs.automationAddOns+1)}
+              style={{width:22,height:22,borderRadius:3,border:`1px solid ${B.green}`,background:B.white,cursor:"pointer",fontSize:13,fontWeight:700,color:B.green,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+            {pricing.automationFee>0&&<span style={{fontSize:9,fontWeight:600,color:B.green}}>+${(pricing.automationFee/1000).toFixed(0)}k/yr</span>}
+          </div>
+        </div>
       </div>
 
       {/* Top-level KPI boxes */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
         {[
-          {label:"Platform Tier",value:pricing.tierName,sub:`Up to ${pricing.maxDevs} devs · $${(pricing.platformFee/1000).toFixed(0)}k/yr`},
           {label:"Monthly Credit Fee",value:"$"+Math.round(pricing.monthlyCreditFee).toLocaleString(),sub:formatCredits(pricing.totalCreditsPerMonth)+" credits/mo"},
           {label:"Annual Credit Fee",value:"$"+Math.round(pricing.annualCreditFee).toLocaleString(),sub:"12 × monthly credit fee"},
-          {label:"Total Annual Fee",value:"$"+Math.round(pricing.totalAnnualFee).toLocaleString(),sub:"Platform + credits",highlight:true},
+          {label:"Total Annual Fee",value:"$"+Math.round(pricing.totalAnnualFee).toLocaleString(),sub:`$${(pricing.basePlatformFee/1000).toFixed(0)}k platform`+(pricing.automationFee>0?` + $${(pricing.automationFee/1000).toFixed(0)}k automation`:"")+` + $${Math.round(pricing.annualCreditFee/1000)}k credits`,highlight:true},
         ].map(s=>(
           <div key={s.label} style={{background:s.highlight?B.greenBg:B.offWhite,borderRadius:4,padding:"10px 12px",borderLeft:`3px solid ${s.highlight?B.green:B.greenLight}`}}>
             <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:500,marginBottom:3}}>{s.label}</div>
@@ -1276,11 +1333,13 @@ function CreditPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, 
             <span style={{fontSize:9,fontWeight:700,color:B.darkGray}}>${Math.round(pricing.totalAnnualFee).toLocaleString()}/yr</span>
           </div>
           <div style={{display:"flex",height:6,borderRadius:3,overflow:"hidden",background:B.offWhite}}>
-            <div style={{width:(pricing.platformFee/pricing.totalAnnualFee*100)+"%",background:B.green,borderRadius:"3px 0 0 3px"}} title={"Platform: $"+pricing.platformFee.toLocaleString()}/>
+            <div style={{width:(pricing.basePlatformFee/pricing.totalAnnualFee*100)+"%",background:B.green,borderRadius:"3px 0 0 3px"}} title={"Platform: $"+pricing.basePlatformFee.toLocaleString()}/>
+            {pricing.automationFee>0&&<div style={{width:(pricing.automationFee/pricing.totalAnnualFee*100)+"%",background:B.greenDark}} title={"Automation: $"+pricing.automationFee.toLocaleString()}/>}
             <div style={{width:(pricing.annualCreditFee/pricing.totalAnnualFee*100)+"%",background:B.greenLight}} title={"Credits: $"+Math.round(pricing.annualCreditFee).toLocaleString()}/>
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
-            <span style={{fontSize:8,color:B.green,fontWeight:600}}>Platform: ${(pricing.platformFee/1000).toFixed(0)}k/yr</span>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:3,flexWrap:"wrap",gap:4}}>
+            <span style={{fontSize:8,color:B.green,fontWeight:600}}>Platform: ${(pricing.basePlatformFee/1000).toFixed(0)}k/yr</span>
+            {pricing.automationFee>0&&<span style={{fontSize:8,color:B.greenDark,fontWeight:600}}>Automation: ${(pricing.automationFee/1000).toFixed(0)}k/yr</span>}
             <span style={{fontSize:8,color:B.greenLight,fontWeight:600}}>Credits: ${Math.round(pricing.annualCreditFee/1000).toLocaleString()}k/yr</span>
           </div>
         </div>
@@ -2077,7 +2136,15 @@ function ROICalculator(){
   const selectedPricingCost = pricing.totalAnnualFee;
 
   const handlePricingInputChange = useCallback((key, val)=>{
-    setPricingInputs(prev=>({...prev,[key]:val}));
+    setPricingInputs(prev=>{
+      const next = {...prev,[key]:val};
+      // Auto-select tier when dev count changes
+      if(key==="totalDevs"){
+        const autoTier = PLATFORM_TIERS.findIndex(t=>val<=t.maxDevs);
+        next.platformTier = autoTier >= 0 ? autoTier : PLATFORM_TIERS.length - 1;
+      }
+      return next;
+    });
   },[]);
 
   // Compute final results (with credit pricing override if enabled)

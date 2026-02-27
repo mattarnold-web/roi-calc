@@ -250,13 +250,22 @@ describe('Credit Pricing compute', () => {
     expect(r.totalAnnualFee).toBe(676000);
   });
 
-  it('selects correct platform tier based on dev count', () => {
-    expect(computeCreditPricing({totalDevs:100}).tierName).toBe("Core");
-    expect(computeCreditPricing({totalDevs:100}).platformFee).toBe(50000);
-    expect(computeCreditPricing({totalDevs:500}).tierName).toBe("Standard");
-    expect(computeCreditPricing({totalDevs:500}).platformFee).toBe(100000);
-    expect(computeCreditPricing({totalDevs:2000}).tierName).toBe("Advanced");
-    expect(computeCreditPricing({totalDevs:2000}).platformFee).toBe(150000);
+  it('selects correct platform tier based on platformTier index', () => {
+    expect(computeCreditPricing({platformTier:0}).tierName).toBe("Core");
+    expect(computeCreditPricing({platformTier:0}).basePlatformFee).toBe(50000);
+    expect(computeCreditPricing({platformTier:1}).tierName).toBe("Standard");
+    expect(computeCreditPricing({platformTier:1}).basePlatformFee).toBe(100000);
+    expect(computeCreditPricing({platformTier:2}).tierName).toBe("Advanced");
+    expect(computeCreditPricing({platformTier:2}).basePlatformFee).toBe(150000);
+  });
+
+  it('automation add-ons add $50k each to platform fee', () => {
+    const r0 = computeCreditPricing({platformTier:1, automationAddOns:0});
+    const r2 = computeCreditPricing({platformTier:1, automationAddOns:2});
+    expect(r0.automationFee).toBe(0);
+    expect(r0.platformFee).toBe(100000);
+    expect(r2.automationFee).toBe(100000);
+    expect(r2.platformFee).toBe(200000);
   });
 
   it('changing activeRatio scales interactive credits', () => {
