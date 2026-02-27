@@ -119,6 +119,28 @@ describe('Metrics display', () => {
     expect(screen.getByText('Return on investment')).toBeInTheDocument();
     expect(screen.getByText('Total annual benefit')).toBeInTheDocument();
   });
+
+  it('hides a metric when X button is clicked', () => {
+    render(<App />);
+    // "Return on investment" should be visible initially
+    expect(screen.getByText('Return on investment')).toBeInTheDocument();
+    // Find all remove buttons (titled "Remove this metric")
+    const removeButtons = screen.getAllByTitle('Remove this metric');
+    expect(removeButtons.length).toBeGreaterThan(0);
+    // Click the first remove button
+    fireEvent.click(removeButtons[0]);
+    // The number of remove buttons should decrease
+    const remainingButtons = screen.getAllByTitle('Remove this metric');
+    expect(remainingButtons.length).toBeLessThan(removeButtons.length);
+  });
+
+  it('shows restore dropdown after hiding a metric', () => {
+    render(<App />);
+    const removeButtons = screen.getAllByTitle('Remove this metric');
+    fireEvent.click(removeButtons[0]);
+    // A "Restore" dropdown should appear
+    expect(screen.getByText(/Restore/)).toBeInTheDocument();
+  });
 });
 
 describe('Pilot thresholds', () => {
