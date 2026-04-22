@@ -91,16 +91,74 @@ CI=true npm test   # Single run (CI)
 
 ## Build & Deploy
 
+Production deployments go to **Google Cloud Run** in project `augment-skills-test` (region `us-central1`).
+
+The app is containerized via a multi-stage `Dockerfile`: Node 18 builds the React bundle, then Nginx 1.27 serves it. Cloud Run injects the `PORT` env var at runtime.
+
+### Deploy to Cloud Run
+
+Use the included deployment script. It enforces a deterministic pipeline:
+
+```bash
+./deploy.sh            # Deploy current main to Cloud Run
+./deploy.sh --dry-run  # Pre-flight checks only (no install/test/build/deploy)
+./deploy.sh --help     # Show usage
+```
+
+**What `deploy.sh` does, in order:**
+
+1. **Branch gate** — must be on `main`
+2. **Clean tree** — no uncommitted or staged changes
+3. **Origin sync** — fetches `origin/main` and fails if local differs
+4. **gcloud CLI check** — verifies `gcloud` is installed
+5. *(dry-run exits here)*
+6. **Install** — `npm ci` (deterministic, from lockfile)
+7. **Test** — `CI=true npm test`
+8. **Build** — `PUBLIC_URL=/ npm run build`
+9. **Deploy** — `gcloud run deploy roi-calc --source .`
+
+Every deploy logs the exact commit SHA for traceability.
+
+### GCP Prerequisites
+
+Deployers need these IAM roles on project `augment-skills-test`:
+
+| Role | Purpose |
+|------|---------|
+| `roles/run.admin` | Deploy & describe Cloud Run services |
+| `roles/cloudbuild.builds.editor` | `--source` deploys trigger Cloud Build |
+| `roles/storage.admin` | Cloud Build stages source in GCS buckets |
+| `roles/artifactregistry.writer` | Push built container images |
+| `roles/iam.serviceAccountUser` | Act as Cloud Run service account during deploy |
+
+Authenticate with: `gcloud auth login` (use your `@augmentcode.com` account).
+
+### Testing the Deploy Script
+
+The deploy script has its own test suite that validates every guard in isolation using temporary git repos and mocked `gcloud`/`npm`:
+
+```bash
+./deploy.test.sh
+```
+
+**8 tests, 16 assertions** covering:
+
+| Test | Guard |
+|------|-------|
+| 1 | Rejects non-`main` branch |
+| 2 | Rejects dirty working tree |
+| 3 | Rejects out-of-sync with `origin/main` |
+| 4 | Rejects missing `gcloud` CLI |
+| 5 | `--dry-run` succeeds without install/test/build |
+| 6 | Output includes commit SHA |
+| 7 | Output includes service name, project, region |
+| 8 | Rejects unknown arguments |
+
+### Manual build (without deploying)
+
 ```bash
 npm run build      # Production build → build/
 ```
-
-### Vercel
-
-1. Push to GitHub
-2. [vercel.com](https://vercel.com) → Import Project → select this repo
-3. Add `REACT_APP_GOOGLE_CLIENT_ID` in Vercel environment settings
-4. Deploy
 
 ### Static hosting
 
