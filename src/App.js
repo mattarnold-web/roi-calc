@@ -508,24 +508,24 @@ async function generatePDF(allCatResults, customerName, enabled, enabledCats, ca
     doc.text(lines, margin+4, sy+24);
   }
 
-  // Credit Pricing Estimator section (if enabled)
+  // Token+ Pricing Estimator section (if enabled)
   if(usePricingCost && pricing && sy < H-100) {
     sy += 16;
     rect(margin-4, sy-4, W-margin*2+8, 80, greenBg);
     doc.setDrawColor(...green); doc.setLineWidth(1.5); doc.rect(margin-4, sy-4, W-margin*2+8, 80, "S");
-    txt("AUGMENT CREDIT PRICING ESTIMATOR", margin+4, sy+10, {size:7, color:green, bold:true});
+    txt("AUGMENT TOKEN+ PRICING ESTIMATOR", margin+4, sy+10, {size:7, color:green, bold:true});
     const bw = (W - margin*2 - 36) / 4;
-    [{l:"Platform Tier",v:pricing.tierName+" ($"+(pricing.basePlatformFee/1000)+"k/yr)",s:pricing.tierDesc+(pricing.automationFee>0?" + $"+(pricing.automationFee/1000)+"k automation":"")},
-     {l:"Monthly Credit Fee",v:"$"+Math.round(pricing.monthlyCreditFee).toLocaleString()+"/mo",s:formatCredits(pricing.totalCreditsPerMonth)+" credits/mo"},
-     {l:"Annual Credit Fee",v:"$"+Math.round(pricing.annualCreditFee).toLocaleString()+"/yr",s:"12 × monthly"},
-     {l:"Total Annual Fee",v:"$"+Math.round(pricing.totalAnnualFee).toLocaleString()+"/yr",s:"Platform"+(pricing.automationFee>0?" + automation":"")+" + credits"},
+    [{l:"Platform Fee",v:"$"+Math.round(pricing.platformFee).toLocaleString()+"/yr",s:pricing.tierName+" · "+pricing.tierDesc+(pricing.platformFeeDiscountPct>0?" · −"+Math.round(pricing.platformFeeDiscountPct*100)+"% discount":"")},
+     {l:"Token Cost @ API",v:"$"+Math.round(pricing.tokenCostTotal).toLocaleString()+"/yr",s:Math.round((1-pricing.pctByok)*100)+"% hosted + "+Math.round(pricing.pctByok*100)+"% BYOK"},
+     {l:"Augment Value Fee",v:"$"+Math.round(pricing.augmentSurcharge).toLocaleString()+"/yr",s:Math.round(pricing.surchargeRate*100)+"% surcharge on tokens"},
+     {l:"Total Augment Cost",v:"$"+Math.round(pricing.augmentCost).toLocaleString()+"/yr",s:"Platform + billed usage"+(pricing.tokenCostByok>0?" · TCO $"+Math.round(pricing.totalTco).toLocaleString():"")},
     ].forEach((b,i) => {
       const bx = margin + 4 + i*(bw+12);
       txt(b.l, bx, sy+26, {size:6, color:green, bold:true});
       txt(b.v, bx, sy+40, {size:10, color:black, bold:true});
       txt(b.s, bx, sy+52, {size:6, color:gray});
     });
-    txt("* This is an illustrative estimate, not a binding quote. Contact your Augment account team for a formal proposal.", margin+4, sy+68, {size:6, color:gray});
+    txt("* Token costs are at provider list prices. Illustrative estimate only — contact your Augment account team for a formal proposal.", margin+4, sy+68, {size:6, color:gray});
   }
 
   // Footer
@@ -1016,36 +1016,39 @@ async function generateExcel(allCatResults, customerName, enabled, enabledCats, 
     XLSX.utils.book_append_sheet(wb, ucWs, sheetName);
   });
 
-  // ─── Credit Pricing Sheet (if enabled) ───
+  // ─── Token+ Pricing Sheet (if enabled) ───
   if(usePricingCost && pricing) {
     const bRows = [
-      ["Augment Credit Pricing Estimator"],
+      ["Augment Token+ Pricing Estimator"],
       [],
-      ["Total Developers", pricing.totalDevs],
-      ["Active Developers (Interactive)", pricing.activeDevs],
-      ["Platform Tier", pricing.tierName+" — "+pricing.tierDesc],
-      ["Base Platform Fee ($/yr)", pricing.basePlatformFee],
-      ...(pricing.automationAddOns>0?[["Custom Automation Add-ons", pricing.automationAddOns+" × $50k = $"+pricing.automationFee.toLocaleString()]]:[]),
-      ["Total Platform Fee ($/yr)", pricing.platformFee],
+      ["User count (seats)", pricing.userCount],
+      ["Platform tier", pricing.tierName+" — "+pricing.tierDesc],
+      ["Platform fee (list)", Math.round(pricing.platformFeeList)],
+      ...(pricing.platformFeeDiscountPct>0?[["Platform fee discount", Math.round(pricing.platformFeeDiscountPct*100)+"%"]]:[]),
+      ["Platform fee (annual)", Math.round(pricing.platformFee)],
       [],
-      ["Category", "Quantity/mo", "Credits/unit", "Credits/mo", "$/mo"],
-      ["Interactive", pricing.activeDevs+"×activities", "", Math.round(pricing.interactiveCreditsPerMonth), Math.round(pricing.interactiveDollarsPerMonth)],
-      ["Code Review (PRs)", "", "", Math.round(pricing.crCreditsPerMonth), Math.round(pricing.crCreditsPerMonth/pricing.creditsPerDollar)],
-      ["Unit Tests", "", "", Math.round(pricing.utCreditsPerMonth), Math.round(pricing.utCreditsPerMonth/pricing.creditsPerDollar)],
-      ["TOTAL", "", "", Math.round(pricing.totalCreditsPerMonth), Math.round(pricing.monthlyCreditFee)],
+      ["Surcharge rate (Augment Value Fee)", Math.round(pricing.surchargeRate*100)+"%"],
+      ["BYOK share", Math.round(pricing.pctByok*100)+"%"],
+      ...(pricing.providerDiscountPct>0?[["Provider discount (BYOK)", Math.round(pricing.providerDiscountPct*100)+"%"]]:[]),
       [],
-      ["Monthly Credit Fee", Math.round(pricing.monthlyCreditFee)],
-      ["Annual Credit Fee", Math.round(pricing.annualCreditFee)],
-      ["Base Platform Fee", Math.round(pricing.basePlatformFee)],
-      ...(pricing.automationFee>0?[["Automation Add-on Fee", Math.round(pricing.automationFee)]]:[]),
-      ["Total Platform Fee", Math.round(pricing.platformFee)],
-      ["Total Annual Fee", Math.round(pricing.totalAnnualFee)],
+      ["Component", "Annual ($)", "Notes"],
+      ["Platform Fee", Math.round(pricing.platformFee), pricing.tierName+(pricing.platformFeeDiscountPct>0?" · −"+Math.round(pricing.platformFeeDiscountPct*100)+"% discount":"")],
+      ["Token cost — Augment-hosted", Math.round(pricing.tokenCostAugment), "list provider prices · billed through Augment"],
+      ["Token cost — BYOK", Math.round(pricing.tokenCostByok), "customer keys · pass-through"],
+      ["Token cost @ API (total)", Math.round(pricing.tokenCostTotal), "hosted + BYOK at list"],
+      ["Augment Value Fee", Math.round(pricing.augmentSurcharge), Math.round(pricing.surchargeRate*100)+"% × total token cost"],
+      ["Billed cost (Augment revenue)", Math.round(pricing.billedCost), "hosted tokens + value fee"],
+      ["Budget used (governance)", Math.round(pricing.budgetUsed), "total token cost × (1 + surcharge)"],
       [],
-      ["* This is an illustrative estimate only, not a binding quote."],
+      ["Total Augment Cost (annual)", Math.round(pricing.augmentCost), "platform + billed cost — feeds ROI"],
+      ...(pricing.tokenCostByok>0?[["Provider bill (BYOK actual)", Math.round(pricing.providerActualCost), "paid direct by customer"]]:[]),
+      ...(pricing.tokenCostByok>0?[["Total Customer TCO", Math.round(pricing.totalTco), "Augment cost + BYOK provider bill"]]:[]),
+      [],
+      ["* Token costs at provider list prices. Illustrative estimate only, not a binding quote."],
     ];
     const bWs = XLSX.utils.aoa_to_sheet(bRows);
-    bWs["!cols"] = [{wch:30},{wch:18},{wch:14},{wch:18},{wch:14}];
-    XLSX.utils.book_append_sheet(wb, bWs, "Credit Pricing");
+    bWs["!cols"] = [{wch:34},{wch:18},{wch:50}];
+    XLSX.utils.book_append_sheet(wb, bWs, "Token+ Pricing");
   }
 
   // Save
@@ -1066,125 +1069,168 @@ export const fmt=(val,format)=>{
 
 const SL=["Conservative","Midpoint","Optimistic"];
 
-// ─── CREDIT-BASED PRICING MODEL ───
+// ─── TOKEN+ PRICING MODEL ───
+// Augment_cost = Platform Fee + LLM Inference Cost @ provider list + Augment Value Fee (surcharge on tokens)
 
-export const PLATFORM_TIERS = [
-  { name:"Core", fee:50000, maxDevs:200, desc:"Up to 200 developers" },
-  { name:"Standard", fee:100000, maxDevs:1000, desc:"Up to 1,000 developers" },
-  { name:"Advanced", fee:150000, maxDevs:Infinity, desc:"Unlimited developers" },
+export const PLATFORM_FEE_TIERS = [
+  { name:"Tier 1", fee:50000,  maxUsers:300,      desc:"Up to 300 users" },
+  { name:"Tier 2", fee:100000, maxUsers:500,      desc:"301 – 500 users" },
+  { name:"Tier 3", fee:200000, maxUsers:1000,     desc:"501 – 1,000 users" },
+  { name:"Tier 4", fee:300000, maxUsers:3000,     desc:"1,001 – 3,000 users" },
+  { name:"Tier 5", fee:null,   maxUsers:Infinity, desc:"Over 3,000 users (custom)" },
 ];
 
-export const CREDIT_PRICING_DEFAULTS = {
-  platformTier: 1,            // index into PLATFORM_TIERS (0=Core,1=Standard,2=Advanced)
-  automationAddOns: 0,        // number of Custom Automation add-ons ($50k each)
-  totalDevs: 500,
-  activeRatio: 60,            // % of devs active in Augment (interactive)
-  activitiesPerMonth: 100,    // interactive activities per user per month
-  creditsPerActivity: 500,    // credits per interactive activity
-  prsPerMonth: 4000,          // PRs for code review per month
-  creditsPerPR: 1000,         // credits per PR automation
-  testsPerMonth: 20000,       // unit tests generated per month
-  creditsPerTest: 250,        // credits per test automation
-  creditsPerDollar: 500,      // fixed: $1 = 500 enterprise credits
+export const SURCHARGE_TIERS = [
+  { maxAcv:100000,   rate:0.30, label:"< $100K" },
+  { maxAcv:300000,   rate:0.30, label:"$100K – $300K" },
+  { maxAcv:500000,   rate:0.28, label:"$300K – $500K" },
+  { maxAcv:1000000,  rate:0.26, label:"$500K – $1M" },
+  { maxAcv:Infinity, rate:0.24, label:"≥ $1M" },
+];
+
+export const TOKEN_PLUS_DEFAULTS = {
+  user_count: 500,
+  platform_fee_list: null,           // null → derive from tier table; number → explicit override
+  platform_fee_discount_pct: 0,      // 0–1
+  token_cost_total: 500000,          // annual USD at provider list prices
+  pct_byok: 0.5,                     // fraction of total token cost that is BYOK (0–1)
+  provider_discount_pct: 0,          // customer's negotiated discount off list for BYOK spend (0–1)
+  surcharge_rate: 0.30,              // Augment Value Fee rate (0–1)
 };
 
-export function extractTotalDevs(useCases, enabled, enabledCats, catValues) {
-  let maxDevs = 0;
-  useCases.filter(p => enabled[p.id]).forEach(useCase => {
-    const cats = enabledCats[useCase.id] || [];
-    cats.forEach(catId => {
-      const cat = useCase.evalCategories.find(c => c.id === catId);
-      if (!cat) return;
-      const vals = catValues[useCase.id]?.[catId] || {};
-      ["devs","seniorDevs"].forEach(field => {
-        const inp = cat.inputs.find(i => i.key === field);
-        if (inp) maxDevs = Math.max(maxDevs, vals[field] ?? inp.default);
-      });
-    });
-  });
-  return maxDevs || 50;
+export function lookupPlatformFeeTier(user_count) {
+  const n = Math.max(0, user_count || 0);
+  const idx = PLATFORM_FEE_TIERS.findIndex(t => n <= t.maxUsers);
+  const tierIndex = idx >= 0 ? idx : PLATFORM_FEE_TIERS.length - 1;
+  return { ...PLATFORM_FEE_TIERS[tierIndex], tierIndex };
 }
 
-export function computeCreditPricing(config) {
-  const c = { ...CREDIT_PRICING_DEFAULTS, ...config };
+export function computePlatformFee(user_count, platform_fee_list, platform_fee_discount_pct = 0) {
+  const tier = lookupPlatformFeeTier(user_count);
+  const hasOverride = platform_fee_list != null && platform_fee_list >= 0;
+  const list = hasOverride ? platform_fee_list : (tier.fee != null ? tier.fee : 0);
+  const d = Math.min(Math.max(platform_fee_discount_pct || 0, 0), 1);
+  return list * (1 - d);
+}
 
-  // Fixed platform tier selection (user picks, not auto-detected)
-  const tier = PLATFORM_TIERS[c.platformTier] || PLATFORM_TIERS[1];
-
-  // Custom Automation add-on ($50k/yr per automation)
-  const automationFee = (c.automationAddOns || 0) * 50000;
-
-  // Interactive credits
-  const activeDevs = Math.round(c.totalDevs * (c.activeRatio / 100));
-  const interactiveCreditsPerMonth = activeDevs * c.activitiesPerMonth * c.creditsPerActivity;
-  const interactiveDollarsPerMonth = interactiveCreditsPerMonth / c.creditsPerDollar;
-
-  // Non-interactive credits (Code Review + Unit Tests)
-  const crCreditsPerMonth = c.prsPerMonth * c.creditsPerPR;
-  const utCreditsPerMonth = c.testsPerMonth * c.creditsPerTest;
-  const nonInteractiveCreditsPerMonth = crCreditsPerMonth + utCreditsPerMonth;
-
-  // Totals
-  const totalCreditsPerMonth = interactiveCreditsPerMonth + nonInteractiveCreditsPerMonth;
-  const monthlyCreditFee = totalCreditsPerMonth / c.creditsPerDollar;
-  const annualCreditFee = monthlyCreditFee * 12;
-  const platformFee = tier.fee + automationFee;
-  const totalAnnualFee = annualCreditFee + platformFee;
-
+export function splitTokenCost(token_cost_total, pct_byok) {
+  const p = Math.min(Math.max(pct_byok || 0, 0), 1);
   return {
-    // Tier
-    tierName: tier.name,
-    tierIndex: c.platformTier,
-    basePlatformFee: tier.fee,
-    automationAddOns: c.automationAddOns || 0,
-    automationFee,
-    platformFee,
-    maxDevs: tier.maxDevs === Infinity ? "Unlimited" : tier.maxDevs,
-    tierDesc: tier.desc,
-    totalDevs: c.totalDevs,
-    activeDevs,
-    // Interactive
-    interactiveCreditsPerMonth,
-    interactiveDollarsPerMonth,
-    // Non-interactive
-    crCreditsPerMonth,
-    utCreditsPerMonth,
-    nonInteractiveCreditsPerMonth,
-    // Totals
-    totalCreditsPerMonth,
-    monthlyCreditFee,
-    annualCreditFee,
-    totalAnnualFee,
-    creditsPerDollar: c.creditsPerDollar,
+    token_cost_byok: (token_cost_total || 0) * p,
+    token_cost_augment: (token_cost_total || 0) * (1 - p),
   };
 }
 
-function formatCredits(n) {
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + "K";
-  return String(Math.round(n));
+export function suggestSurchargeRate(deal_acv) {
+  const t = SURCHARGE_TIERS.find(st => (deal_acv || 0) < st.maxAcv) || SURCHARGE_TIERS[SURCHARGE_TIERS.length - 1];
+  return t.rate;
 }
 
-function CreditPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, onInputChange }) {
-  const cellLabel={fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:500,padding:"6px 8px",textAlign:"left",borderBottom:"1px solid #F0F0F0"};
-  const cellVal={fontSize:10,fontWeight:600,color:B.black,padding:"6px 8px",textAlign:"right",borderBottom:"1px solid #F0F0F0"};
-  const cellHead={fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:700,padding:"6px 8px",borderBottom:`2px solid ${B.green}`};
+export function computeTokenPlusCosts(config) {
+  const c = { ...TOKEN_PLUS_DEFAULTS, ...config };
+  const tier = lookupPlatformFeeTier(c.user_count);
 
-  const editableCell = (key, val, opts={}) => (
-    <td style={{...cellVal,padding:"3px 4px"}}>
-      <input type="number" value={val} onChange={e=>onInputChange(key,Number(e.target.value))}
-        min={opts.min||0} step={opts.step||1}
-        style={{width:"100%",maxWidth:90,textAlign:"right",border:`1px solid #E0E0E0`,borderRadius:3,
-          padding:"3px 6px",fontSize:10,fontWeight:600,color:B.black,outline:"none",background:B.offWhite}} />
-    </td>
+  const platformFee = computePlatformFee(
+    c.user_count,
+    c.platform_fee_list,
+    c.platform_fee_discount_pct
   );
+
+  // Accept either explicit split (token_cost_augment / token_cost_byok)
+  // or a combined total + pct_byok — whichever the caller provides.
+  const hasExplicitSplit = c.token_cost_augment != null || c.token_cost_byok != null;
+  const clampedPctByok = Math.min(Math.max(c.pct_byok || 0, 0), 1);
+  const tokenCostAugment = hasExplicitSplit
+    ? (c.token_cost_augment || 0)
+    : (c.token_cost_total || 0) * (1 - clampedPctByok);
+  const tokenCostByok = hasExplicitSplit
+    ? (c.token_cost_byok || 0)
+    : (c.token_cost_total || 0) * clampedPctByok;
+  const tokenCostTotal = tokenCostAugment + tokenCostByok;
+
+  const surchargeRate = Math.min(Math.max(c.surcharge_rate || 0, 0), 1);
+  const augmentSurcharge = tokenCostTotal * surchargeRate;
+  const billedCost = tokenCostAugment + augmentSurcharge;
+  const budgetUsed = tokenCostTotal * (1 + surchargeRate);
+
+  const providerDiscountPct = Math.min(Math.max(c.provider_discount_pct || 0, 0), 1);
+  const providerActualCost = tokenCostByok * (1 - providerDiscountPct);
+
+  const augmentCost = platformFee + billedCost;
+  const totalTco = platformFee + billedCost + providerActualCost;
+
+  const effectivePctByok = tokenCostTotal > 0 ? tokenCostByok / tokenCostTotal : 0;
+  const platformFeeList = (c.platform_fee_list != null && c.platform_fee_list >= 0)
+    ? c.platform_fee_list
+    : (tier.fee != null ? tier.fee : 0);
+
+  return {
+    // Inputs / tier meta (for UI display)
+    userCount: c.user_count,
+    tierName: tier.name,
+    tierIndex: tier.tierIndex,
+    tierDesc: tier.desc,
+    tierMaxUsers: tier.maxUsers === Infinity ? "Unlimited" : tier.maxUsers,
+    tierListFee: tier.fee,               // null → Tier 5 (custom required)
+    isCustomTier: tier.fee == null,
+    platformFeeList,
+    platformFeeDiscountPct: Math.min(Math.max(c.platform_fee_discount_pct || 0, 0), 1),
+    surchargeRate,
+    pctByok: effectivePctByok,
+    providerDiscountPct,
+
+    // Derived fields (spec §2.2)
+    platformFee,
+    tokenCostAugment,
+    tokenCostByok,
+    tokenCostTotal,
+    augmentSurcharge,
+    billedCost,
+    budgetUsed,
+    providerActualCost,
+    augmentCost,                          // feeds existing ROI formulas
+    totalTco,
+  };
+}
+
+function formatUsd(n) {
+  const v = Math.round(n || 0);
+  return "$" + v.toLocaleString();
+}
+
+function formatUsdK(n) {
+  const v = (n || 0) / 1000;
+  return "$" + (v >= 100 ? v.toFixed(0) : v.toFixed(1)) + "k";
+}
+
+const HIDEABLE_PRICING_FIELDS = [
+  { key:"token_cost_total",      label:"Total token cost" },
+  { key:"pct_byok",              label:"BYOK share" },
+  { key:"provider_discount_pct", label:"Provider discount" },
+  { key:"surcharge_rate",        label:"Augment Value Fee" },
+];
+
+function TokenPlusPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, onInputChange, hiddenFields=[], onHideField, onRestoreField }) {
+  const cellHead={fontSize:8,color:B.green,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:700,padding:"6px 8px",borderBottom:`2px solid ${B.green}`};
+  const cellLabel={fontSize:9,color:B.darkGray,padding:"6px 8px",textAlign:"left",borderBottom:"1px solid #F0F0F0"};
+  const cellVal={fontSize:10,fontWeight:600,color:B.black,padding:"6px 8px",textAlign:"right",borderBottom:"1px solid #F0F0F0"};
+
+  const numInput = (key, val, opts={}) => (
+    <input type="number" value={val ?? ""} onChange={e=>onInputChange(key,Number(e.target.value))}
+      min={opts.min ?? 0} max={opts.max} step={opts.step ?? 1}
+      style={{width:opts.width||90,textAlign:"right",border:`1px solid #E0E0E0`,borderRadius:3,
+        padding:"4px 6px",fontSize:10,fontWeight:600,color:B.black,outline:"none",background:B.white}} />
+  );
+
+  const pctByokDisplay = Math.round((pricingInputs.pct_byok || 0) * 100);
+  const surchargeSuggested = suggestSurchargeRate(pricing.tokenCostTotal);
 
   return (
     <div style={{background:B.white,border:`2px solid ${usePricingCost?B.green:"#E8E8E8"}`,borderTop:`3px solid ${usePricingCost?B.green:B.amber}`,borderRadius:4,padding:"16px 18px",marginBottom:16,transition:"border-color 0.2s"}}>
+      {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{fontSize:9,color:usePricingCost?B.green:B.amber,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Augment Credit Pricing Estimator</div>
+          <div style={{fontSize:9,color:usePricingCost?B.green:B.amber,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700}}>Augment Token+ Pricing Estimator</div>
           <button onClick={onToggle} style={{
             display:"inline-flex",alignItems:"center",gap:6,
             background:usePricingCost?B.greenBg:B.offWhite,
@@ -1200,164 +1246,247 @@ function CreditPricingPanel({ pricing, usePricingCost, onToggle, pricingInputs, 
             {usePricingCost?"Included in ROI":"Excluded from ROI"}
           </button>
         </div>
-        <div style={{fontSize:9,color:B.gray}}>{pricing.tierName} tier · {pricing.totalDevs} devs · {pricing.activeDevs} active ({pricingInputs.activeRatio}%)</div>
+        <div style={{fontSize:9,color:B.gray}}>{pricing.tierName} · {pricing.userCount.toLocaleString()} users · {Math.round(pricing.surchargeRate*100)}% value fee · {Math.round(pricing.pctByok*100)}% BYOK</div>
       </div>
 
-      {/* Platform Tier Selector */}
+      {/* Platform Fee Tier display (auto-selected from user_count) */}
       <div style={{marginBottom:14}}>
-        <div style={{fontSize:8,color:B.green,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Platform Tier <span style={{color:B.gray,fontWeight:500,fontStyle:"italic"}}> — auto-selects based on developer count, or pick manually</span></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-          {PLATFORM_TIERS.map((t,i)=>{
-            const recommendedIdx = PLATFORM_TIERS.findIndex(pt=>pricingInputs.totalDevs<=pt.maxDevs);
-            const isRecommended = i===(recommendedIdx>=0?recommendedIdx:PLATFORM_TIERS.length-1);
-            return(
-            <button key={t.name} onClick={()=>onInputChange("platformTier",i)} style={{
-              padding:"10px 12px",borderRadius:4,cursor:"pointer",textAlign:"left",
-              border:`2px solid ${pricing.tierIndex===i?B.green:"#E0E0E0"}`,
-              background:pricing.tierIndex===i?B.greenBg:B.offWhite,
-              transition:"all 0.15s",position:"relative",
-            }}>
-              {isRecommended&&pricing.tierIndex===i&&<span style={{position:"absolute",top:-7,right:8,fontSize:7,fontWeight:700,color:B.white,background:B.green,borderRadius:3,padding:"1px 5px",letterSpacing:"0.04em"}}>AUTO</span>}
-              {isRecommended&&pricing.tierIndex!==i&&<span style={{position:"absolute",top:-7,right:8,fontSize:7,fontWeight:600,color:B.green,background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:3,padding:"0px 4px",letterSpacing:"0.04em"}}>REC</span>}
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
-                <div style={{fontSize:11,fontWeight:700,color:pricing.tierIndex===i?B.greenDark:B.black}}>{t.name}</div>
-                <div style={{fontSize:12,fontWeight:700,color:pricing.tierIndex===i?B.green:B.darkGray}}>${(t.fee/1000).toFixed(0)}k<span style={{fontSize:8,fontWeight:500}}>/yr</span></div>
+        <div style={{fontSize:8,color:B.green,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>
+          Platform Fee Tier
+          <span style={{color:B.gray,fontWeight:500,fontStyle:"italic"}}> — auto-selects from user count; Tier 5 is a custom deal</span>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:6,marginBottom:10}}>
+          {PLATFORM_FEE_TIERS.map((t,i)=>{
+            const selected = pricing.tierIndex === i;
+            return (
+              <div key={t.name} style={{
+                padding:"8px 10px",borderRadius:4,
+                border:`2px solid ${selected?B.green:"#E0E0E0"}`,
+                background:selected?B.greenBg:B.offWhite,
+                position:"relative",transition:"all 0.15s",
+              }}>
+                {selected&&<span style={{position:"absolute",top:-7,right:6,fontSize:7,fontWeight:700,color:B.white,background:B.green,borderRadius:3,padding:"1px 5px",letterSpacing:"0.04em"}}>ACTIVE</span>}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:selected?B.greenDark:B.black}}>{t.name}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:selected?B.green:B.darkGray}}>
+                    {t.fee != null ? `$${(t.fee/1000).toFixed(0)}k` : "Custom"}
+                  </div>
+                </div>
+                <div style={{fontSize:8,color:B.gray,marginTop:2}}>{t.desc}</div>
               </div>
-              <div style={{fontSize:8,color:B.gray,marginTop:2}}>{t.desc}</div>
-            </button>
             );
           })}
         </div>
+      </div>
 
-        {/* Custom Automation Add-on */}
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:B.offWhite,borderRadius:4,border:`1px solid ${pricing.automationAddOns>0?B.green:"#E8E8E8"}`}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:9,fontWeight:700,color:pricing.automationAddOns>0?B.greenDark:B.darkGray}}>Custom Automation Add-on</div>
-            <div style={{fontSize:8,color:B.gray}}>$50k/yr per automation · paired with {pricing.tierName}</div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <button onClick={()=>onInputChange("automationAddOns",Math.max(0,pricingInputs.automationAddOns-1))}
-              disabled={pricingInputs.automationAddOns<=0}
-              style={{width:22,height:22,borderRadius:3,border:`1px solid ${pricingInputs.automationAddOns>0?B.green:"#D0D0D0"}`,background:B.white,cursor:pricingInputs.automationAddOns>0?"pointer":"default",fontSize:13,fontWeight:700,color:pricingInputs.automationAddOns>0?B.green:"#CCC",display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
-            <span style={{fontSize:13,fontWeight:700,color:pricing.automationAddOns>0?B.green:B.gray,minWidth:18,textAlign:"center"}}>{pricingInputs.automationAddOns}</span>
-            <button onClick={()=>onInputChange("automationAddOns",pricingInputs.automationAddOns+1)}
-              style={{width:22,height:22,borderRadius:3,border:`1px solid ${B.green}`,background:B.white,cursor:"pointer",fontSize:13,fontWeight:700,color:B.green,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
-            {pricing.automationFee>0&&<span style={{fontSize:9,fontWeight:600,color:B.green}}>+${(pricing.automationFee/1000).toFixed(0)}k/yr</span>}
-          </div>
+      {/* Row 1: Tenant / platform inputs */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
+        <div style={{background:B.offWhite,borderRadius:4,padding:"8px 10px"}}>
+          <label style={{fontSize:8,color:B.gray,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",display:"block",marginBottom:4}}>Users (seats)</label>
+          {numInput("user_count", pricingInputs.user_count, {min:1, step:10, width:"100%"})}
+        </div>
+        <div style={{background:B.offWhite,borderRadius:4,padding:"8px 10px"}}>
+          <label style={{fontSize:8,color:B.gray,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",display:"block",marginBottom:4}}>
+            Platform fee list {pricing.isCustomTier && <span style={{color:B.amber}}>· custom required</span>}
+          </label>
+          {numInput("platform_fee_list", pricingInputs.platform_fee_list ?? pricing.tierListFee ?? 0, {min:0, step:5000, width:"100%"})}
+          <div style={{fontSize:7,color:B.gray,marginTop:3}}>tier list = {pricing.tierListFee != null ? formatUsdK(pricing.tierListFee)+"/yr" : "—"}</div>
+        </div>
+        <div style={{background:B.offWhite,borderRadius:4,padding:"8px 10px"}}>
+          <label style={{fontSize:8,color:B.gray,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",display:"block",marginBottom:4}}>Platform discount (%)</label>
+          {numInput("platform_fee_discount_pct_ui", Math.round((pricingInputs.platform_fee_discount_pct || 0)*100), {min:0, max:100, step:1, width:"100%"})}
         </div>
       </div>
 
+      {/* Row 2: Token economics (each field is hideable; data still feeds ROI) */}
+      {(() => {
+        const hidden = new Set(hiddenFields);
+        const visible = HIDEABLE_PRICING_FIELDS.filter(f => !hidden.has(f.key));
+        const hiddenList = HIDEABLE_PRICING_FIELDS.filter(f => hidden.has(f.key));
+
+        const hideBtn = (key) => (
+          <button onClick={()=>onHideField && onHideField(key)} title="Hide from UI (value still used in ROI)"
+            style={{position:"absolute",top:4,right:4,width:14,height:14,borderRadius:2,border:"none",background:"transparent",color:B.gray,cursor:"pointer",fontSize:10,lineHeight:"14px",padding:0}}>×</button>
+        );
+        const cellStyle = {background:B.offWhite,borderRadius:4,padding:"8px 10px",position:"relative"};
+        const labelStyle = {fontSize:8,color:B.gray,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",display:"block",marginBottom:4};
+
+        const renderField = (key) => {
+          switch(key){
+            case "token_cost_total": return (
+              <div key={key} style={cellStyle}>
+                {hideBtn(key)}
+                <label style={labelStyle}>Total token cost ($/yr, list)</label>
+                {numInput("token_cost_total", pricingInputs.token_cost_total, {min:0, step:10000, width:"100%"})}
+              </div>
+            );
+            case "pct_byok": return (
+              <div key={key} style={cellStyle}>
+                {hideBtn(key)}
+                <label style={labelStyle}>BYOK share (%)</label>
+                <input type="range" min={0} max={100} step={5} value={pctByokDisplay}
+                  onChange={e=>onInputChange("pct_byok_ui", Number(e.target.value))}
+                  style={{width:"100%",accentColor:B.green}} />
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:B.gray,marginTop:2}}>
+                  <span>{pctByokDisplay}% BYOK</span>
+                  <span>{100-pctByokDisplay}% hosted</span>
+                </div>
+              </div>
+            );
+            case "provider_discount_pct": return (
+              <div key={key} style={cellStyle}>
+                {hideBtn(key)}
+                <label style={labelStyle}>Provider discount (BYOK, %)</label>
+                {numInput("provider_discount_pct_ui", Math.round((pricingInputs.provider_discount_pct || 0)*100), {min:0, max:80, step:1, width:"100%"})}
+              </div>
+            );
+            case "surcharge_rate": return (
+              <div key={key} style={cellStyle}>
+                {hideBtn(key)}
+                <label style={labelStyle}>
+                  Augment Value Fee (%)
+                  {Math.abs(surchargeSuggested - (pricingInputs.surcharge_rate||0)) > 0.001 &&
+                    <button onClick={()=>onInputChange("surcharge_rate", surchargeSuggested)}
+                      style={{marginLeft:6,fontSize:7,color:B.green,background:"transparent",border:`1px solid ${B.green}`,borderRadius:2,padding:"0 4px",cursor:"pointer",fontWeight:700,letterSpacing:"0.04em"}}>
+                      use {Math.round(surchargeSuggested*100)}%
+                    </button>
+                  }
+                </label>
+                {numInput("surcharge_rate_ui", Math.round((pricingInputs.surcharge_rate || 0)*100), {min:0, max:100, step:1, width:"100%"})}
+              </div>
+            );
+            default: return null;
+          }
+        };
+
+        return (
+          <div style={{marginBottom:14}}>
+            {hiddenList.length > 0 && (
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <div style={{fontSize:8,color:B.gray,fontStyle:"italic"}}>
+                  {hiddenList.length} hidden field{hiddenList.length>1?"s":""} — value{hiddenList.length>1?"s":""} still contributing to ROI
+                </div>
+                <select onChange={e=>{ if(e.target.value && onRestoreField){ onRestoreField(e.target.value); e.target.value=""; } }} value=""
+                  style={{background:B.white,border:`1px dashed ${B.green}`,borderRadius:3,padding:"2px 6px",fontSize:8,fontWeight:600,color:B.green,cursor:"pointer",appearance:"auto"}}>
+                  <option value="">+ Restore ({hiddenList.length})</option>
+                  {hiddenList.map(f=><option key={f.key} value={f.key}>{f.label}</option>)}
+                </select>
+              </div>
+            )}
+            {visible.length > 0 && (
+              <div style={{display:"grid",gridTemplateColumns:`repeat(${visible.length}, 1fr)`,gap:10}}>
+                {visible.map(f => renderField(f.key))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Top-level KPI boxes */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:14}}>
         {[
-          {label:"Monthly Credit Fee",value:"$"+Math.round(pricing.monthlyCreditFee).toLocaleString(),sub:formatCredits(pricing.totalCreditsPerMonth)+" credits/mo"},
-          {label:"Annual Credit Fee",value:"$"+Math.round(pricing.annualCreditFee).toLocaleString(),sub:"12 × monthly credit fee"},
-          {label:"Total Annual Fee",value:"$"+Math.round(pricing.totalAnnualFee).toLocaleString(),sub:`$${(pricing.basePlatformFee/1000).toFixed(0)}k platform`+(pricing.automationFee>0?` + $${(pricing.automationFee/1000).toFixed(0)}k automation`:"")+` + $${Math.round(pricing.annualCreditFee/1000)}k credits`,highlight:true},
+          {label:"Platform Fee",value:formatUsd(pricing.platformFee),sub:pricing.platformFeeDiscountPct>0?`after ${Math.round(pricing.platformFeeDiscountPct*100)}% discount`:"annual"},
+          {label:"Token Cost @ API",value:formatUsd(pricing.tokenCostTotal),sub:`${Math.round((1-pricing.pctByok)*100)}% hosted + ${Math.round(pricing.pctByok*100)}% BYOK`},
+          {label:"Augment Value Fee",value:formatUsd(pricing.augmentSurcharge),sub:`${Math.round(pricing.surchargeRate*100)}% surcharge on tokens`},
+          {label:"Total Augment Cost",value:formatUsd(pricing.augmentCost),sub:"platform + billed usage",highlight:true},
         ].map(s=>(
           <div key={s.label} style={{background:s.highlight?B.greenBg:B.offWhite,borderRadius:4,padding:"10px 12px",borderLeft:`3px solid ${s.highlight?B.green:B.greenLight}`}}>
             <div style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:500,marginBottom:3}}>{s.label}</div>
-            <div style={{fontSize:s.highlight?18:15,fontWeight:700,color:s.highlight?B.green:B.black,lineHeight:1}}>{s.value}</div>
+            <div style={{fontSize:s.highlight?17:14,fontWeight:700,color:s.highlight?B.green:B.black,lineHeight:1}}>{s.value}</div>
             <div style={{fontSize:8,color:B.gray,marginTop:3}}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Credit consumption table */}
+      {/* Cost composition table */}
       <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
         <thead>
           <tr>
-            <th style={{...cellHead,textAlign:"left"}}>Category</th>
-            <th style={{...cellHead,textAlign:"right"}}>Quantity/mo</th>
-            <th style={{...cellHead,textAlign:"right"}}>Credits/unit</th>
-            <th style={{...cellHead,textAlign:"right"}}>Credits/mo</th>
-            <th style={{...cellHead,textAlign:"right"}}>$/mo</th>
+            <th style={{...cellHead,textAlign:"left"}}>Component</th>
+            <th style={{...cellHead,textAlign:"right"}}>Annual ($)</th>
+            <th style={{...cellHead,textAlign:"left"}}>Notes</th>
           </tr>
         </thead>
         <tbody>
-          {/* Interactive row */}
           <tr>
-            <td style={cellLabel}><strong style={{color:B.black}}>Interactive</strong><br/><span style={{fontSize:7}}>{pricing.activeDevs} users × {pricingInputs.activitiesPerMonth} activities/mo</span></td>
-            {editableCell("activitiesPerMonth",pricingInputs.activitiesPerMonth,{min:1,step:10})}
-            {editableCell("creditsPerActivity",pricingInputs.creditsPerActivity,{min:1,step:50})}
-            <td style={cellVal}>{formatCredits(pricing.interactiveCreditsPerMonth)}</td>
-            <td style={cellVal}>${Math.round(pricing.interactiveDollarsPerMonth).toLocaleString()}</td>
+            <td style={cellLabel}><strong style={{color:B.black}}>Platform Fee</strong></td>
+            <td style={cellVal}>{formatUsd(pricing.platformFee)}</td>
+            <td style={cellLabel}>{pricing.tierName} · list {formatUsd(pricing.platformFeeList)}{pricing.platformFeeDiscountPct>0?` · −${Math.round(pricing.platformFeeDiscountPct*100)}%`:""}</td>
           </tr>
-          {/* Code Review row */}
           <tr style={{background:B.cardBg}}>
-            <td style={cellLabel}><strong style={{color:B.black}}>Code Review (PRs)</strong></td>
-            {editableCell("prsPerMonth",pricingInputs.prsPerMonth,{min:1,step:100})}
-            {editableCell("creditsPerPR",pricingInputs.creditsPerPR,{min:1,step:100})}
-            <td style={cellVal}>{formatCredits(pricing.crCreditsPerMonth)}</td>
-            <td style={cellVal}>${Math.round(pricing.crCreditsPerMonth/pricing.creditsPerDollar).toLocaleString()}</td>
+            <td style={cellLabel}><strong style={{color:B.black}}>Token cost @ API — Augment-hosted</strong></td>
+            <td style={cellVal}>{formatUsd(pricing.tokenCostAugment)}</td>
+            <td style={cellLabel}>list provider prices · billed through Augment</td>
           </tr>
-          {/* Unit Tests row */}
           <tr>
-            <td style={cellLabel}><strong style={{color:B.black}}>Unit Tests</strong></td>
-            {editableCell("testsPerMonth",pricingInputs.testsPerMonth,{min:1,step:500})}
-            {editableCell("creditsPerTest",pricingInputs.creditsPerTest,{min:1,step:25})}
-            <td style={cellVal}>{formatCredits(pricing.utCreditsPerMonth)}</td>
-            <td style={cellVal}>${Math.round(pricing.utCreditsPerMonth/pricing.creditsPerDollar).toLocaleString()}</td>
+            <td style={cellLabel}><strong style={{color:B.black}}>Token cost @ API — BYOK</strong></td>
+            <td style={cellVal}>{formatUsd(pricing.tokenCostByok)}</td>
+            <td style={cellLabel}>customer keys · passes through; not billed by Augment</td>
+          </tr>
+          <tr style={{background:B.cardBg}}>
+            <td style={cellLabel}><strong style={{color:B.black}}>Augment Value Fee</strong></td>
+            <td style={cellVal}>{formatUsd(pricing.augmentSurcharge)}</td>
+            <td style={cellLabel}>{Math.round(pricing.surchargeRate*100)}% × total token cost ({formatUsd(pricing.tokenCostTotal)})</td>
           </tr>
         </tbody>
         <tfoot>
           <tr style={{borderTop:`2px solid ${B.green}`,background:B.greenBg}}>
-            <td style={{...cellLabel,fontWeight:700,color:B.greenDark,borderBottom:"none"}}>TOTAL</td>
-            <td style={{...cellVal,borderBottom:"none"}} colSpan={2}>{formatCredits(pricing.totalCreditsPerMonth)} credits/mo</td>
-            <td style={{...cellVal,borderBottom:"none"}}/>
-            <td style={{...cellVal,fontWeight:700,color:B.green,fontSize:12,borderBottom:"none"}}>${Math.round(pricing.monthlyCreditFee).toLocaleString()}</td>
+            <td style={{...cellLabel,fontWeight:700,color:B.greenDark,borderBottom:"none"}}>TOTAL AUGMENT COST</td>
+            <td style={{...cellVal,fontWeight:700,color:B.green,fontSize:12,borderBottom:"none"}}>{formatUsd(pricing.augmentCost)}</td>
+            <td style={{...cellLabel,borderBottom:"none"}}>Platform + Augment-hosted tokens + Value Fee</td>
           </tr>
+          {pricing.tokenCostByok > 0 && (
+            <tr>
+              <td style={{...cellLabel,fontSize:8,color:B.gray,borderBottom:"none",paddingTop:4}}>+ BYOK provider bill (paid direct)</td>
+              <td style={{...cellVal,color:B.gray,fontWeight:600,borderBottom:"none"}}>{formatUsd(pricing.providerActualCost)}</td>
+              <td style={{...cellLabel,fontSize:8,color:B.gray,borderBottom:"none"}}>
+                {pricing.providerDiscountPct>0?`list ${formatUsd(pricing.tokenCostByok)} − ${Math.round(pricing.providerDiscountPct*100)}% discount`:"list price"}
+              </td>
+            </tr>
+          )}
+          {pricing.tokenCostByok > 0 && (
+            <tr>
+              <td style={{...cellLabel,fontSize:9,fontWeight:700,color:B.darkGray,borderBottom:"none"}}>Total Customer TCO</td>
+              <td style={{...cellVal,fontWeight:700,color:B.darkGray,borderBottom:"none"}}>{formatUsd(pricing.totalTco)}</td>
+              <td style={{...cellLabel,fontSize:8,color:B.gray,borderBottom:"none"}}>Augment cost + BYOK provider bill</td>
+            </tr>
+          )}
         </tfoot>
       </table>
 
-      {/* Editable config row */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
-        {[
-          {key:"totalDevs",label:"Total Developers",val:pricingInputs.totalDevs,min:1,step:10},
-          {key:"activeRatio",label:"Active in Augment (%)",val:pricingInputs.activeRatio,min:1,max:100,step:5},
-          {key:"creditsPerDollar",label:"Credits per Dollar",val:pricingInputs.creditsPerDollar,min:1,step:50},
-        ].map(f=>(
-          <div key={f.key} style={{display:"flex",alignItems:"center",gap:6,background:B.offWhite,borderRadius:4,padding:"6px 10px"}}>
-            <label style={{fontSize:8,color:B.gray,fontWeight:500,whiteSpace:"nowrap"}}>{f.label}</label>
-            <input type="number" value={f.val} onChange={e=>onInputChange(f.key,Number(e.target.value))}
-              min={f.min} max={f.max} step={f.step}
-              style={{width:70,textAlign:"right",border:`1px solid #E0E0E0`,borderRadius:3,padding:"3px 6px",fontSize:10,fontWeight:600,color:B.black,outline:"none",background:B.white}} />
-          </div>
-        ))}
-      </div>
-
-      {/* Breakdown bar */}
-      {pricing.totalAnnualFee > 0 && (
+      {/* Breakdown bar (Augment cost composition) */}
+      {pricing.augmentCost > 0 && (
         <div style={{marginBottom:10}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-            <span style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em"}}>Annual Investment Breakdown</span>
-            <span style={{fontSize:9,fontWeight:700,color:B.darkGray}}>${Math.round(pricing.totalAnnualFee).toLocaleString()}/yr</span>
+            <span style={{fontSize:8,color:B.gray,textTransform:"uppercase",letterSpacing:"0.06em"}}>Augment Cost Composition</span>
+            <span style={{fontSize:9,fontWeight:700,color:B.darkGray}}>{formatUsd(pricing.augmentCost)}/yr</span>
           </div>
           <div style={{display:"flex",height:6,borderRadius:3,overflow:"hidden",background:B.offWhite}}>
-            <div style={{width:(pricing.basePlatformFee/pricing.totalAnnualFee*100)+"%",background:B.green,borderRadius:"3px 0 0 3px"}} title={"Platform: $"+pricing.basePlatformFee.toLocaleString()}/>
-            {pricing.automationFee>0&&<div style={{width:(pricing.automationFee/pricing.totalAnnualFee*100)+"%",background:B.greenDark}} title={"Automation: $"+pricing.automationFee.toLocaleString()}/>}
-            <div style={{width:(pricing.annualCreditFee/pricing.totalAnnualFee*100)+"%",background:B.greenLight}} title={"Credits: $"+Math.round(pricing.annualCreditFee).toLocaleString()}/>
+            <div style={{width:(pricing.platformFee/pricing.augmentCost*100)+"%",background:B.green,borderRadius:"3px 0 0 3px"}} title={"Platform: "+formatUsd(pricing.platformFee)}/>
+            {pricing.tokenCostAugment>0&&<div style={{width:(pricing.tokenCostAugment/pricing.augmentCost*100)+"%",background:B.greenDark}} title={"Hosted tokens: "+formatUsd(pricing.tokenCostAugment)}/>}
+            {pricing.augmentSurcharge>0&&<div style={{width:(pricing.augmentSurcharge/pricing.augmentCost*100)+"%",background:B.greenLight}} title={"Value fee: "+formatUsd(pricing.augmentSurcharge)}/>}
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",marginTop:3,flexWrap:"wrap",gap:4}}>
-            <span style={{fontSize:8,color:B.green,fontWeight:600}}>Platform: ${(pricing.basePlatformFee/1000).toFixed(0)}k/yr</span>
-            {pricing.automationFee>0&&<span style={{fontSize:8,color:B.greenDark,fontWeight:600}}>Automation: ${(pricing.automationFee/1000).toFixed(0)}k/yr</span>}
-            <span style={{fontSize:8,color:B.greenLight,fontWeight:600}}>Credits: ${Math.round(pricing.annualCreditFee/1000).toLocaleString()}k/yr</span>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:3,flexWrap:"wrap",gap:6}}>
+            <span style={{fontSize:8,color:B.green,fontWeight:600}}>Platform: {formatUsdK(pricing.platformFee)}/yr</span>
+            {pricing.tokenCostAugment>0&&<span style={{fontSize:8,color:B.greenDark,fontWeight:600}}>Hosted tokens: {formatUsdK(pricing.tokenCostAugment)}/yr</span>}
+            {pricing.augmentSurcharge>0&&<span style={{fontSize:8,color:B.greenLight,fontWeight:600}}>Value fee: {formatUsdK(pricing.augmentSurcharge)}/yr</span>}
           </div>
         </div>
       )}
 
       {!usePricingCost && (
         <div style={{background:B.amberBg,border:`1px solid ${B.amber}`,borderRadius:4,padding:"8px 12px",fontSize:9,color:B.darkGray,lineHeight:1.6}}>
-          Credit pricing is currently <strong>excluded</strong> from ROI calculations. Per-category manual cost sliders are being used instead. Toggle on to use this estimate.
+          Token+ pricing is currently <strong>excluded</strong> from ROI calculations. Per-category manual cost sliders are being used instead. Toggle on to use this estimate.
         </div>
       )}
       {usePricingCost && (
         <div style={{background:B.greenBg,border:`1px solid ${B.green}`,borderRadius:4,padding:"8px 12px",fontSize:9,color:B.greenDark,lineHeight:1.6}}>
-          Using <strong>${Math.round(pricing.totalAnnualFee).toLocaleString()}/yr</strong> as platform cost in all ROI calculations. Per-category cost sliders are overridden.
+          Using <strong>{formatUsd(pricing.augmentCost)}/yr</strong> as Augment cost in all ROI calculations. Per-category cost sliders are overridden.
         </div>
       )}
 
       <div style={{marginTop:10,padding:"8px 12px",background:"#FAFAFA",border:"1px solid #E8E8E8",borderRadius:4,fontSize:8,color:B.gray,lineHeight:1.7,fontStyle:"italic"}}>
-        This is an illustrative estimate only, not a binding quote. Actual Augment pricing depends on contract terms, negotiated discounts, promotional credits, and usage patterns. Contact your Augment account team for a formal proposal.
+        Illustrative Token+ estimate only, not a binding quote. Token costs are at provider list prices; actual Augment pricing depends on contract terms, negotiated platform and value-fee discounts, and realized token usage. Contact your Augment account team for a formal proposal.
       </div>
     </div>
   );
@@ -1833,7 +1962,7 @@ function DisabledTab({useCase,onEnable}){
 
 // ─── SUMMARY TAB (per-category breakdown) ───
 
-function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,pricing,usePricingCost,onTogglePricing,pricingInputs,onPricingInputChange,selectedPricingCost}){
+function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,catScenarios,thresholds,showPilot,pricing,usePricingCost,onTogglePricing,pricingInputs,onPricingInputChange,selectedPricingCost,hiddenPricingFields,onHidePricingField,onRestorePricingField}){
   if(allCatResults.length===0) return(
     <div style={{padding:"60px 32px",textAlign:"center"}}>
       <div style={{fontSize:14,color:B.gray,marginBottom:8}}>No use cases are currently included.</div>
@@ -1891,8 +2020,8 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
             <span style={{fontSize:13}}>↓</span> Excel
           </button>
         </div>
-        {/* Credit Pricing Estimator */}
-        <CreditPricingPanel pricing={pricing} usePricingCost={usePricingCost} onToggle={onTogglePricing} pricingInputs={pricingInputs} onInputChange={onPricingInputChange}/>
+        {/* Token+ Pricing Estimator */}
+        <TokenPlusPricingPanel pricing={pricing} usePricingCost={usePricingCost} onToggle={onTogglePricing} pricingInputs={pricingInputs} onInputChange={onPricingInputChange} hiddenFields={hiddenPricingFields} onHideField={onHidePricingField} onRestoreField={onRestorePricingField}/>
 
         {/* Per-category breakdown table */}
         <div style={{background:B.white,border:"1px solid #E8E8E8",borderTop:`3px solid ${B.green}`,borderRadius:4,padding:"16px 18px",marginBottom:16}}>
@@ -1976,7 +2105,7 @@ function SummaryTab({allCatResults,customerName,enabled,enabledCats,catValues,ca
         <div style={{background:B.black,borderRadius:4,padding:"14px 16px"}}>
           <div style={{fontSize:9,color:B.greenBright,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Combined Executive Narrative</div>
           <p style={{fontSize:10,color:"#CCCCCC",lineHeight:1.9,maxWidth:800}}>
-            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment{usePricingCost?<span style={{color:B.amber}}> ({pricing.tierName} tier, credit-based pricing)</span>:null} — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.{usePricingCost?<span style={{color:"#999"}}> Total annual Augment investment: ${Math.round(pricing.totalAnnualFee).toLocaleString()}/yr (${(pricing.platformFee/1000).toFixed(0)}k platform + ${Math.round(pricing.annualCreditFee/1000).toLocaleString()}k credits). {formatCredits(pricing.totalCreditsPerMonth*12)} enterprise credits/yr. This is an illustrative estimate, not a binding quote.</span>:null}
+            Across {useCaseCount} active Augment Code use case{useCaseCount>1?"s":""} and {allCatResults.length} evaluation categor{allCatResults.length===1?"y":"ies"}, the platform delivers <span style={{color:B.white,fontWeight:700}}>${Math.round(grandTotal).toLocaleString()}</span> in annual benefit against a <span style={{color:B.white,fontWeight:700}}>${Math.round(grandCost).toLocaleString()}</span> investment{usePricingCost?<span style={{color:B.amber}}> ({pricing.tierName}, Token+ pricing)</span>:null} — a <span style={{color:B.greenBright,fontWeight:700}}>{Math.round(grandROI)}% combined ROI</span> with a payback period of <span style={{color:B.greenBright,fontWeight:700}}>{grandPayback.toFixed(1)} months</span>, recovering <span style={{color:B.white,fontWeight:700}}>{grandFTE.toFixed(1)} FTEs</span> of engineering capacity annually.{usePricingCost?<span style={{color:"#999"}}> Augment cost: ${Math.round(pricing.augmentCost).toLocaleString()}/yr (${(pricing.platformFee/1000).toFixed(0)}k platform + ${Math.round(pricing.tokenCostAugment/1000).toLocaleString()}k hosted tokens + ${Math.round(pricing.augmentSurcharge/1000).toLocaleString()}k value fee @ {Math.round(pricing.surchargeRate*100)}%).{pricing.tokenCostByok>0?` Total customer TCO incl. BYOK provider bill: $${Math.round(pricing.totalTco).toLocaleString()}/yr.`:""} Illustrative estimate, not a binding quote.</span>:null}
           </p>
         </div>
       </div>
@@ -2015,7 +2144,8 @@ function ROICalculator(){
   const [enabled,setEnabled]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
   const [showPilot,setShowPilot]=useState({"code-review":true,"unit-test":true,"build-failure":true,"interactive":true});
   const [usePricingCost,setUsePricingCost]=useState(true);
-  const [pricingInputs,setPricingInputs]=useState({...CREDIT_PRICING_DEFAULTS});
+  const [pricingInputs,setPricingInputs]=useState({...TOKEN_PLUS_DEFAULTS});
+  const [hiddenPricingFields,setHiddenPricingFields]=useState([]);
 
   const [enabledCats,setEnabledCats]=useState({
     "code-review":["throughput"],
@@ -2130,24 +2260,43 @@ function ROICalculator(){
     setShowPilot(prev=>({...prev,[useCaseId]:!prev[useCaseId]}));
   },[]);
 
-  // Compute credit pricing (always computed for display; toggle controls whether it's used in ROI)
-  const totalDevs = extractTotalDevs(USE_CASES, enabled, enabledCats, catValues); // eslint-disable-line no-unused-vars
-  const pricing = computeCreditPricing({...pricingInputs, totalDevs: pricingInputs.totalDevs});
-  const selectedPricingCost = pricing.totalAnnualFee;
+  // Compute Token+ pricing (always computed for display; toggle controls whether it's used in ROI)
+  const pricing = computeTokenPlusCosts(pricingInputs);
+  const selectedPricingCost = pricing.augmentCost;
 
   const handlePricingInputChange = useCallback((key, val)=>{
     setPricingInputs(prev=>{
-      const next = {...prev,[key]:val};
-      // Auto-select tier when dev count changes
-      if(key==="totalDevs"){
-        const autoTier = PLATFORM_TIERS.findIndex(t=>val<=t.maxDevs);
-        next.platformTier = autoTier >= 0 ? autoTier : PLATFORM_TIERS.length - 1;
+      const next = {...prev};
+      // UI-level helpers: percent sliders expressed as 0–100 translate to 0–1 model values
+      if(key==="pct_byok_ui"){ next.pct_byok = Math.min(Math.max(val/100,0),1); return next; }
+      if(key==="surcharge_rate_ui"){ next.surcharge_rate = Math.min(Math.max(val/100,0),1); return next; }
+      if(key==="provider_discount_pct_ui"){ next.provider_discount_pct = Math.min(Math.max(val/100,0),1); return next; }
+      if(key==="platform_fee_discount_pct_ui"){ next.platform_fee_discount_pct = Math.min(Math.max(val/100,0),1); return next; }
+
+      next[key] = val;
+
+      // When user_count changes, reset the list override so the tier-based fee re-applies
+      // unless the user has explicitly entered a custom value for that tier's slot.
+      if(key==="user_count"){
+        const newTier = lookupPlatformFeeTier(val);
+        const oldTier = lookupPlatformFeeTier(prev.user_count);
+        // If prior list matches the prior tier's list, auto-follow the new tier.
+        if(prev.platform_fee_list == null || prev.platform_fee_list === oldTier.fee){
+          next.platform_fee_list = newTier.fee; // may be null for Tier 5 — user must enter a custom value
+        }
       }
       return next;
     });
   },[]);
 
-  // Compute final results (with credit pricing override if enabled)
+  const handleHidePricingField = useCallback((key)=>{
+    setHiddenPricingFields(prev => prev.includes(key) ? prev : [...prev, key]);
+  },[]);
+  const handleRestorePricingField = useCallback((key)=>{
+    setHiddenPricingFields(prev => prev.filter(k => k !== key));
+  },[]);
+
+  // Compute final results (with Token+ pricing override if enabled)
   const allCatResults=[];
   USE_CASES.filter(p=>enabled[p.id]).forEach(useCase=>{
     const cats=enabledCats[useCase.id]||[];
@@ -2273,7 +2422,7 @@ function ROICalculator(){
 
       {/* CONTENT */}
       {activeTab==="summary"?(
-        <SummaryTab allCatResults={allCatResults} customerName={customerName} enabled={enabled} enabledCats={enabledCats} catValues={catValues} catScenarios={catScenarios} thresholds={thresholds} showPilot={Object.values(showPilot).some(v=>v)} pricing={pricing} usePricingCost={usePricingCost} onTogglePricing={()=>setUsePricingCost(prev=>!prev)} pricingInputs={pricingInputs} onPricingInputChange={handlePricingInputChange} selectedPricingCost={selectedPricingCost}/>
+        <SummaryTab allCatResults={allCatResults} customerName={customerName} enabled={enabled} enabledCats={enabledCats} catValues={catValues} catScenarios={catScenarios} thresholds={thresholds} showPilot={Object.values(showPilot).some(v=>v)} pricing={pricing} usePricingCost={usePricingCost} onTogglePricing={()=>setUsePricingCost(prev=>!prev)} pricingInputs={pricingInputs} onPricingInputChange={handlePricingInputChange} selectedPricingCost={selectedPricingCost} hiddenPricingFields={hiddenPricingFields} onHidePricingField={handleHidePricingField} onRestorePricingField={handleRestorePricingField}/>
       ):activeUseCase?(
         enabled[activeUseCase.id]?(
           <UseCaseTab

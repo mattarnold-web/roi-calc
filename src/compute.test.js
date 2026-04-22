@@ -1,4 +1,13 @@
-import { USE_CASES, computeCreditPricing, CREDIT_PRICING_DEFAULTS, PLATFORM_TIERS } from './App';
+import {
+  USE_CASES,
+  computeTokenPlusCosts,
+  computePlatformFee,
+  lookupPlatformFeeTier,
+  splitTokenCost,
+  suggestSurchargeRate,
+  PLATFORM_FEE_TIERS,
+  TOKEN_PLUS_DEFAULTS,
+} from './App';
 
 const findUseCase = (id) => USE_CASES.find(uc => uc.id === id);
 
@@ -224,65 +233,251 @@ describe('Compute results invariants', () => {
   });
 });
 
-// ─── Credit Pricing compute ───
+// ─── Token+ Pricing compute (spec §2.3.1, §3, §6) ───
 
-describe('Credit Pricing compute', () => {
-  it('calculates defaults matching the reference pricing table', () => {
-    const r = computeCreditPricing(CREDIT_PRICING_DEFAULTS);
-    // 500 devs × 60% = 300 active
-    expect(r.activeDevs).toBe(300);
-    // Interactive: 300 × 100 × 500 = 15,000,000 credits/mo
-    expect(r.interactiveCreditsPerMonth).toBe(15000000);
-    // CR: 4000 × 1000 = 4,000,000 credits/mo
-    expect(r.crCreditsPerMonth).toBe(4000000);
-    // UT: 20000 × 250 = 5,000,000 credits/mo
-    expect(r.utCreditsPerMonth).toBe(5000000);
-    // Total: 24,000,000 credits/mo
-    expect(r.totalCreditsPerMonth).toBe(24000000);
-    // Monthly fee: 24M / 500 = $48,000
-    expect(r.monthlyCreditFee).toBe(48000);
-    // Annual credit fee: $576,000
-    expect(r.annualCreditFee).toBe(576000);
-    // Platform fee: Standard tier ($100k for ≤1000 devs)
-    expect(r.tierName).toBe("Standard");
+describe('Platform fee tier lookup', () => {
+  it('maps user count to the correct tier', () => {
+    // Tier 1 (≤300)
+    expect(lookupPlatformFeeTier(1).name).toBe('Tier 1');
+    expect(lookupPlatformFeeTier(300).name).toBe('Tier 1');
+    expect(lookupPlatformFeeTier(300).fee).toBe(50000);
+    // Tier 2 (301–500)
+    expect(lookupPlatformFeeTier(301).name).toBe('Tier 2');
+    expect(lookupPlatformFeeTier(500).name).toBe('Tier 2');
+    expect(lookupPlatformFeeTier(500).fee).toBe(100000);
+    // Tier 3 (501–1000)
+    expect(lookupPlatformFeeTier(501).name).toBe('Tier 3');
+    expect(lookupPlatformFeeTier(1000).name).toBe('Tier 3');
+    expect(lookupPlatformFeeTier(1000).fee).toBe(200000);
+    // Tier 4 (1001–3000)
+    expect(lookupPlatformFeeTier(1001).name).toBe('Tier 4');
+    expect(lookupPlatformFeeTier(3000).name).toBe('Tier 4');
+    expect(lookupPlatformFeeTier(3000).fee).toBe(300000);
+    // Tier 5 (>3000) — custom
+    expect(lookupPlatformFeeTier(3001).name).toBe('Tier 5');
+    expect(lookupPlatformFeeTier(10000).name).toBe('Tier 5');
+    expect(lookupPlatformFeeTier(10000).fee).toBeNull();
+  });
+});
+
+describe('computePlatformFee', () => {
+  it('uses tier list fee by default', () => {
+    expect(computePlatformFee(450)).toBe(100000);
+    expect(computePlatformFee(300)).toBe(50000);
+    expect(computePlatformFee(1500)).toBe(300000);
+  });
+
+  it('applies discount to list fee', () => {
+    expect(computePlatformFee(300, undefined, 0.10)).toBe(45000);
+    expect(computePlatformFee(450, undefined, 0.25)).toBe(75000);
+  });
+
+  it('uses explicit override when provided (Tier 5 custom case)', () => {
+    expect(computePlatformFee(5000, 500000)).toBe(500000);
+    expect(computePlatformFee(5000, 500000, 0.10)).toBe(450000);
+  });
+
+  it('clamps discount to 0–1 range', () => {
+    expect(computePlatformFee(300, undefined, -0.5)).toBe(50000);
+    expect(computePlatformFee(300, undefined, 2)).toBe(0);
+  });
+
+  it('returns 0 when Tier 5 has no explicit list fee', () => {
+    expect(computePlatformFee(10000)).toBe(0);
+  });
+});
+
+describe('splitTokenCost', () => {
+  it('splits total by pct_byok', () => {
+    const s = splitTokenCost(1000, 0.4);
+    expect(s.token_cost_byok).toBeCloseTo(400, 6);
+    expect(s.token_cost_augment).toBeCloseTo(600, 6);
+  });
+
+  it('clamps pct_byok to 0–1', () => {
+    expect(splitTokenCost(1000, 2).token_cost_byok).toBe(1000);
+    expect(splitTokenCost(1000, -1).token_cost_byok).toBe(0);
+  });
+});
+
+describe('suggestSurchargeRate', () => {
+  it('uses the §2.3.2 helper tiers', () => {
+    expect(suggestSurchargeRate(50000)).toBe(0.30);
+    expect(suggestSurchargeRate(200000)).toBe(0.30);
+    expect(suggestSurchargeRate(400000)).toBe(0.28);
+    expect(suggestSurchargeRate(750000)).toBe(0.26);
+    expect(suggestSurchargeRate(2000000)).toBe(0.24);
+  });
+});
+
+describe('computeTokenPlusCosts — spec §6.1 (Hybrid fixture)', () => {
+  const r = computeTokenPlusCosts({
+    user_count: 450,
+    platform_fee_list: 100000,
+    platform_fee_discount_pct: 0,
+    token_cost_augment: 200000,
+    token_cost_byok: 300000,
+    provider_discount_pct: 0.20,
+    surcharge_rate: 0.30,
+  });
+
+  it('selects Tier 2', () => {
+    expect(r.tierName).toBe('Tier 2');
+    expect(r.tierIndex).toBe(1);
+  });
+
+  it('computes PlatformFee = 100,000', () => {
     expect(r.platformFee).toBe(100000);
-    // Total annual: $676,000
-    expect(r.totalAnnualFee).toBe(676000);
   });
 
-  it('selects correct platform tier based on platformTier index', () => {
-    expect(computeCreditPricing({platformTier:0}).tierName).toBe("Core");
-    expect(computeCreditPricing({platformTier:0}).basePlatformFee).toBe(50000);
-    expect(computeCreditPricing({platformTier:1}).tierName).toBe("Standard");
-    expect(computeCreditPricing({platformTier:1}).basePlatformFee).toBe(100000);
-    expect(computeCreditPricing({platformTier:2}).tierName).toBe("Advanced");
-    expect(computeCreditPricing({platformTier:2}).basePlatformFee).toBe(150000);
+  it('computes token_cost_total = 500,000', () => {
+    expect(r.tokenCostTotal).toBe(500000);
   });
 
-  it('automation add-ons add $50k each to platform fee', () => {
-    const r0 = computeCreditPricing({platformTier:1, automationAddOns:0});
-    const r2 = computeCreditPricing({platformTier:1, automationAddOns:2});
-    expect(r0.automationFee).toBe(0);
-    expect(r0.platformFee).toBe(100000);
-    expect(r2.automationFee).toBe(100000);
-    expect(r2.platformFee).toBe(200000);
+  it('computes augment_surcharge = 150,000', () => {
+    expect(r.augmentSurcharge).toBe(150000);
   });
 
-  it('changing activeRatio scales interactive credits', () => {
-    const r100 = computeCreditPricing({activeRatio:100});
-    const r50 = computeCreditPricing({activeRatio:50});
-    expect(r100.interactiveCreditsPerMonth).toBe(r50.interactiveCreditsPerMonth * 2);
+  it('computes billed_cost = 350,000', () => {
+    expect(r.billedCost).toBe(350000);
   });
 
-  it('changing prsPerMonth scales CR credits', () => {
-    const base = computeCreditPricing({prsPerMonth:4000});
-    const doubled = computeCreditPricing({prsPerMonth:8000});
-    expect(doubled.crCreditsPerMonth).toBe(base.crCreditsPerMonth * 2);
+  it('computes budget_used = 650,000', () => {
+    expect(r.budgetUsed).toBe(650000);
   });
 
-  it('interactive dollars per month = interactive credits / creditsPerDollar', () => {
-    const r = computeCreditPricing(CREDIT_PRICING_DEFAULTS);
-    expect(r.interactiveDollarsPerMonth).toBe(r.interactiveCreditsPerMonth / r.creditsPerDollar);
+  it('computes provider_actual_cost = 240,000', () => {
+    expect(r.providerActualCost).toBe(240000);
+  });
+
+  it('computes Augment_cost = 450,000 (feeds ROI)', () => {
+    expect(r.augmentCost).toBe(450000);
+  });
+
+  it('computes Total_TCO = 690,000', () => {
+    expect(r.totalTco).toBe(690000);
+  });
+});
+
+describe('computeTokenPlusCosts — spec §6.2 (BYOK-only fixture)', () => {
+  const r = computeTokenPlusCosts({
+    user_count: 300,
+    platform_fee_list: 50000,
+    platform_fee_discount_pct: 0.10,
+    token_cost_augment: 0,
+    token_cost_byok: 400000,
+    provider_discount_pct: 0.15,
+    surcharge_rate: 0.30,
+  });
+
+  it('selects Tier 1', () => {
+    expect(r.tierName).toBe('Tier 1');
+    expect(r.tierIndex).toBe(0);
+  });
+
+  it('applies 10% platform discount → PlatformFee = 45,000', () => {
+    expect(r.platformFee).toBe(45000);
+  });
+
+  it('computes token_cost_total = 400,000', () => {
+    expect(r.tokenCostTotal).toBe(400000);
+  });
+
+  it('computes augment_surcharge = 120,000', () => {
+    expect(r.augmentSurcharge).toBe(120000);
+  });
+
+  it('computes billed_cost = 120,000', () => {
+    expect(r.billedCost).toBe(120000);
+  });
+
+  it('computes budget_used = 520,000', () => {
+    expect(r.budgetUsed).toBe(520000);
+  });
+
+  it('computes provider_actual_cost = 340,000 (400k × 0.85)', () => {
+    expect(r.providerActualCost).toBe(340000);
+  });
+
+  it('computes Augment_cost = 165,000', () => {
+    expect(r.augmentCost).toBe(165000);
+  });
+
+  it('computes Total_TCO = 505,000', () => {
+    expect(r.totalTco).toBe(505000);
+  });
+});
+
+describe('computeTokenPlusCosts — derived inputs', () => {
+  it('derives split from token_cost_total + pct_byok when explicit split absent', () => {
+    const r = computeTokenPlusCosts({
+      user_count: 450,
+      token_cost_total: 500000,
+      pct_byok: 0.6,
+      surcharge_rate: 0.30,
+    });
+    expect(r.tokenCostByok).toBeCloseTo(300000, 6);
+    expect(r.tokenCostAugment).toBeCloseTo(200000, 6);
+    expect(r.augmentSurcharge).toBeCloseTo(150000, 6);
+  });
+
+  it('uses tier list when platform_fee_list omitted', () => {
+    const r = computeTokenPlusCosts({
+      user_count: 700,  // Tier 3 → 200k
+      token_cost_total: 0,
+      surcharge_rate: 0.30,
+    });
+    expect(r.platformFee).toBe(200000);
+    expect(r.augmentCost).toBe(200000);
+  });
+
+  it('defaults match TOKEN_PLUS_DEFAULTS structurally', () => {
+    const r = computeTokenPlusCosts({});
+    // 500 users → Tier 2 (100k); token_cost_total 500k split 50/50; surcharge 30%
+    expect(r.tierName).toBe('Tier 2');
+    expect(r.platformFee).toBe(100000);
+    expect(r.tokenCostTotal).toBe(500000);
+    expect(r.augmentSurcharge).toBe(150000);
+    expect(r.billedCost).toBe(400000);     // 250k hosted + 150k surcharge
+    expect(r.augmentCost).toBe(500000);    // 100k platform + 400k billed
+  });
+
+  it('zero total token cost collapses to platform-only Augment cost', () => {
+    const r = computeTokenPlusCosts({
+      user_count: 300,
+      token_cost_total: 0,
+      surcharge_rate: 0.30,
+    });
+    expect(r.augmentSurcharge).toBe(0);
+    expect(r.billedCost).toBe(0);
+    expect(r.augmentCost).toBe(r.platformFee);
+    expect(r.totalTco).toBe(r.platformFee);
+  });
+
+  it('clamps surcharge_rate to 0–1', () => {
+    const r = computeTokenPlusCosts({
+      user_count: 450,
+      token_cost_total: 100000,
+      pct_byok: 0,
+      surcharge_rate: 2,
+    });
+    expect(r.surchargeRate).toBe(1);
+    expect(r.augmentSurcharge).toBe(100000);
+  });
+});
+
+describe('PLATFORM_FEE_TIERS reference table', () => {
+  it('matches spec §2.3.1 fees and user ranges', () => {
+    expect(PLATFORM_FEE_TIERS[0]).toMatchObject({ name:'Tier 1', fee:50000,  maxUsers:300  });
+    expect(PLATFORM_FEE_TIERS[1]).toMatchObject({ name:'Tier 2', fee:100000, maxUsers:500  });
+    expect(PLATFORM_FEE_TIERS[2]).toMatchObject({ name:'Tier 3', fee:200000, maxUsers:1000 });
+    expect(PLATFORM_FEE_TIERS[3]).toMatchObject({ name:'Tier 4', fee:300000, maxUsers:3000 });
+    expect(PLATFORM_FEE_TIERS[4].name).toBe('Tier 5');
+    expect(PLATFORM_FEE_TIERS[4].fee).toBeNull();
+  });
+
+  it('TOKEN_PLUS_DEFAULTS has the spec default surcharge rate', () => {
+    expect(TOKEN_PLUS_DEFAULTS.surcharge_rate).toBe(0.30);
   });
 });
 
